@@ -15,12 +15,12 @@
         </StackPanel>
 
         <StackPanel HorizontalAlignment="Left" VerticalAlignment="Top" Margin="5"  Orientation="Horizontal" >
-            <Button  x:Name="OpenPCB2" Click="OpenPCB1Btn_Click" Width="80" Height="40" FontSize="20" FontWeight="Bold" >PCB 2</Button>
+            <Button  x:Name="OpenPCB2" Click="OpenPCB2Btn_Click" Width="80" Height="40" FontSize="20" FontWeight="Bold" >PCB 2</Button>
             <ComboBox x:Name="MicrophoneComboBox2" Height="40" DisplayMemberPath="ProductName" Width="400" FontSize="20"/>
         </StackPanel>
 
         <StackPanel HorizontalAlignment="Left" VerticalAlignment="Top" Margin="5"  Orientation="Horizontal" >
-            <Button  x:Name="OpenPCB3" Click="OpenPCB1Btn_Click" Width="80" Height="40" FontSize="20" FontWeight="Bold" >PCB 3</Button>
+            <Button  x:Name="OpenPCB3" Click="OpenPCB3Btn_Click" Width="80" Height="40" FontSize="20" FontWeight="Bold" >PCB 3</Button>
             <ComboBox x:Name="MicrophoneComboBox3" Height="40" DisplayMemberPath="ProductName" Width="400" FontSize="20"/>
         </StackPanel>
 

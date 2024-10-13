@@ -245,13 +245,7 @@ namespace SoundKit.Serial
         {
             try
             {
-                SerialPort.PortName = portName;
-
-                if (SerialPort.IsOpen)
-                {
-                    SerialPort.Close();
-                }
-
+                SerialPort.PortName = portName;  
                 SerialPort.Open();
 
 

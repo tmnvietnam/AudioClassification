@@ -1,4 +1,5 @@
 ﻿using NAudio.Wave;
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -57,6 +58,7 @@ namespace SoundKit
             {
                 var deviceInfo = WaveIn.GetCapabilities(deviceIndex);
                 microphones.Add(deviceInfo);
+              
             }
 
             // Bind the list to the ComboBox
@@ -81,6 +83,8 @@ namespace SoundKit
         {
             int selectedMicrophoneIndex = MicrophoneComboBox1.SelectedIndex;
 
+            Trace.WriteLine(selectedMicrophoneIndex);
+
             PCBWindow pcb1Window = new("PCB 1", selectedMicrophoneIndex);
             pcb1Window.Show();
         }
@@ -88,6 +92,8 @@ namespace SoundKit
         private void OpenPCB2Btn_Click(object sender, RoutedEventArgs e)
         {
             int selectedMicrophoneIndex = MicrophoneComboBox2.SelectedIndex;
+
+            Trace.WriteLine(selectedMicrophoneIndex);
 
             PCBWindow pcb1Window = new("PCB 2", selectedMicrophoneIndex);
             pcb1Window.Show();

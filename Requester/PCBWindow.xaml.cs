@@ -16,6 +16,7 @@ using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 using MessageBox = System.Windows.MessageBox;
@@ -238,6 +239,8 @@ namespace SoundKit
             InitializeComponent();
 
             Title = titleWindow;
+            this.Closed += Window_Closed;
+
 
             viewModel = new PCBViewModel(idMIC);
 
@@ -357,8 +360,9 @@ namespace SoundKit
             viewModel.AudioRecorderLearningPage.Dispose();
             SerialConnections.ForEach(connection =>
             {
-                connection.SerialPort.Close();
+                connection.SerialPort.Close();                
                 connection.SerialPort.Dispose();
+
             });
 
         }
@@ -1070,15 +1074,15 @@ namespace SoundKit
         {
             try
             {
-                Accuracy.Text = $"Trainning..."; 
+                TrainingResult.Text = $"Processing..."; 
                 // Create a NamedPipeClientStream
                 using (var pipeClient = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous))
                 {
                     // Connect to the pipe
-                    await pipeClient.ConnectAsync();
+                    await pipeClient.ConnectAsync();                  
 
                     // Write to the pipe
-                    string message = $"train@{datasetPath}";
+                    string message = $"train@{datasetPath}@{int.Parse(EpochTxt.Text)}@{int.Parse(BatchTxt.Text)}";
                     byte[] messageBytes = Encoding.UTF8.GetBytes(message);
                     await pipeClient.WriteAsync(messageBytes, 0, messageBytes.Length);
 
@@ -1094,33 +1098,50 @@ namespace SoundKit
                         try
                         {
                             // Extract the accuracy value from the response
-                            string accuracyPart = response.Split(new[] { "response:" }, StringSplitOptions.None)[1].Trim();
+                            string accuracyPart = response.Split(new[] { ":" }, StringSplitOptions.None)[1].Trim();
+                            string lossPart = response.Split(new[] { ":" }, StringSplitOptions.None)[2].Trim();
 
                             // Parse the accuracy value to float
-                            if (float.TryParse(accuracyPart, out float accuracy))
+                            if (float.TryParse(accuracyPart, out float accuracy) && float.TryParse(lossPart, out float loss))
                             {
                                 // Format the accuracy value to two decimal places
                                 string formattedAccuracy = (accuracy * 100).ToString("F2");
+                                string formattedLoss = (loss * 100).ToString("F2");
+
 
                                 // Update the UI (assuming this is a WPF application)
-                                Accuracy.Text = $"Accuracy: {formattedAccuracy}%";
+                                TrainingResult.Text = $"Accuracy: {formattedAccuracy}%   Loss: {formattedLoss}%";
+                                byte[] imageData = File.ReadAllBytes(Path.Combine(viewModel.BackendPath, "history.png"));
+
+                                BitmapImage bitmapImage = new BitmapImage();
+                                using (var stream = new MemoryStream(imageData))
+                                {
+                                    bitmapImage.BeginInit();
+                                    bitmapImage.CacheOption = BitmapCacheOption.OnLoad; // To fully load the image before closing the stream
+                                    bitmapImage.StreamSource = stream;
+                                    bitmapImage.EndInit();
+                                }
+
+                                // Set the image source to the Image control in WPF
+                                HistoryImg.Source = bitmapImage;
+
                             }
                             else
                             {
                                 Console.WriteLine("Error: Unable to parse the accuracy value.");
-                                Accuracy.Text = "Error parsing accuracy";
+                                TrainingResult.Text = "Error parsing";
                             }
                         }
                         catch (Exception ex)
                         {
                             Console.WriteLine($"Parsing error: {ex.Message}");
-                            Accuracy.Text = "Error parsing accuracy";
+                            TrainingResult.Text = "Error parsing";
                         }
                     }
                     else
                     {
                         Console.WriteLine("Response does not contain 'accuracy:'");
-                        Accuracy.Text = "No accuracy data";
+                        TrainingResult.Text = "No data";
                     }
 
                     // Update UI (assuming this is a WPF application)
@@ -1277,6 +1298,12 @@ namespace SoundKit
             {
                 Console.WriteLine(exception.Message);
             }
+        }
+
+        private void ScanCode(object sender, RoutedEventArgs e)
+        {
+            BarcodeReady = true;
+
         }
     }
 }

@@ -145,15 +145,14 @@
                     </TabItem>
                 </TabControl>
             </TabItem>
-            <TabItem Header="Training">
+            <TabItem Header="Modeling">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="500"/>
-                        <RowDefinition Height="60"/>
-                        <RowDefinition Height="60"/>
-                        <RowDefinition Height="60"/>
-                        <RowDefinition Height="60"/>
-                        <RowDefinition Height="60"/>
+                        <RowDefinition Height="50"/>
+                        <RowDefinition Height="50"/>
+                        <RowDefinition Height="50"/>
+                        <RowDefinition Height="300"/>
                     </Grid.RowDefinitions>
 
                     <Grid Grid.Row="0" Width="1400" Height="500">
@@ -169,8 +168,8 @@
                         </Canvas>
                     </Grid>
 
-                    <StackPanel  Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center"  Margin="100,0,100,0">
-                        <TextBlock FontSize="15"  Width="150" Margin="0,0,20,0" VerticalAlignment="Center" >Dataset Folder:</TextBlock>
+                    <StackPanel    Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center"  Width="1400" VerticalAlignment="Center"  Margin="0,0,0,0">
+                        <TextBlock FontSize="15"  Width="150" Margin="0,0,0,0" VerticalAlignment="Center" >Dataset Folder:</TextBlock>
                         <Button Click="DatasetBrowseButton_Click" Width="30" Height="30" FontSize="15" FontWeight="Bold" Margin="0,0,10,0" Background="White" BorderThickness="0">
                             <fa:IconBlock Icon="FolderOpen" Foreground="#0087d2" />
                         </Button>
@@ -180,24 +179,21 @@
                     </StackPanel>
 
 
-
-                    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center"  Margin="100,0,100,0" Height="50">
-                        <TextBlock  Margin="0,0,0,0" FontSize="15"  Width="130"  VerticalAlignment="Center"  TextAlignment="Left">Recording:</TextBlock>
-                        <TextBlock  Margin="0,0,5,0" FontSize="15"   VerticalAlignment="Center"  TextAlignment="Left">Duration (s):</TextBlock>
-                        <TextBox  x:Name="TextBoxDuration"  Margin="0,0,10,0" Width="50" Height="30" TextAlignment="Center"  VerticalContentAlignment="Center" Text="1"/>
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center"  Width="1400" VerticalAlignment="Center"  Margin="0,0,0,0" Height="50">
+                        <TextBlock  Margin="0,0,0,0" FontSize="15"  Width="150"  VerticalAlignment="Center"  TextAlignment="Left">Recording:</TextBlock>
+                        <TextBlock  Margin="0,0,5,0" FontSize="15"   VerticalAlignment="Center"  TextAlignment="Left">Max duration (s):</TextBlock>
+                        <TextBox  x:Name="TextBoxDuration"  Margin="0,0,10,0" Width="30" Height="25" TextAlignment="Center"  VerticalContentAlignment="Center" Text="1"/>
                         <ProgressBar  HorizontalAlignment="Center"  Name="RecordingProgressBar" Minimum="0" Maximum="100" Width="1000" Height="30" VerticalAlignment="Bottom" Margin="10" />
                         <Button Click="StartRecording_Click" Width="30"  Height="30" FontSize="15" FontWeight="Bold" Margin="0,0,10,0" Background="White" BorderThickness="0">
                             <fa:IconBlock Icon="Play" Foreground="LawnGreen" />
                         </Button>
-                        <!--<Button Click="StopRecording_Click" Width="30"  Height="30" FontSize="15" FontWeight="Bold" Background="White" BorderThickness="0">
-                    <fa:IconBlock Icon="Stop" Foreground="Red" />
-                </Button>-->
+
                     </StackPanel>
 
-                    <StackPanel  Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center"  Margin="100,0,100,0" Height="50">
-                        <TextBlock FontSize="15"  Width="150"  VerticalAlignment="Center"  TextAlignment="Left">Add to Label Category:</TextBlock>
+                    <StackPanel  Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center"  Width="1400" VerticalAlignment="Center"  Margin="0,0,0,0" Height="50">
+                        <TextBlock FontSize="15"  Width="150"  VerticalAlignment="Center"  TextAlignment="Left">Add to dataset:</TextBlock>
 
-                        <StackPanel  Orientation="Horizontal" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"  Margin="50,0,0,0">
+                        <StackPanel  Orientation="Horizontal" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"  Margin="0,0,0,0">
                             <Button  Click="SaveRecordingNG_Click" VerticalAlignment="Center" Margin="0,0,20,0"  Height="30" FontSize="15" FontWeight="Bold"  Foreground="White" Background="DarkRed" BorderThickness="0">
                                 <StackPanel  Orientation="Horizontal" >
                                     <fa:IconBlock Icon="Plus" Margin="5" />
@@ -210,22 +206,28 @@
                                     <TextBlock x:Name="NumberOKDataSet"  FontSize="15"   VerticalAlignment="Center"  TextAlignment="Left" Padding="5" Text="Object sound: N/A"></TextBlock>
                                 </StackPanel>
                             </Button>
-
+                            <Button Click="TrainButton_Click" Foreground="White" Background="DarkOrange" VerticalAlignment="Center"  Width="80" Height="30" BorderThickness="0" FontSize="15" FontWeight="Bold" Margin="0,0,10,0">TRAIN</Button>
+                            <TextBlock  Margin="0,0,5,0" FontSize="15"   VerticalAlignment="Center"  TextAlignment="Left">Epochs:</TextBlock>
+                            <TextBox  x:Name="EpochTxt"  Margin="0,0,10,0" Width="30" Height="25" TextAlignment="Center"  VerticalContentAlignment="Center" Text="50"/>
+                            <TextBlock  Margin="0,0,5,0" FontSize="15"   VerticalAlignment="Center"  TextAlignment="Left">Batch size:</TextBlock>
+                            <TextBox  x:Name="BatchTxt"  Margin="0,0,10,0" Width="30" Height="25" TextAlignment="Center"  VerticalContentAlignment="Center" Text="16"/>
+                            <StackPanel Orientation="Horizontal" Width="350"  Height="30"  HorizontalAlignment="Center" VerticalAlignment="Center" Background="#f1f1f1">
+                                <TextBlock Name="TrainingResult" FontSize="15" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" Width="350">Result: None</TextBlock>
+                            </StackPanel>
+                            <Button HorizontalAlignment="Right" Click="SaveModelFileButton_Click" Width="150" Height="30" FontSize="15" FontWeight="Bold" Margin="0,0,0,0" Background="White" BorderThickness="0">
+                                <StackPanel Orientation="Horizontal">
+                                    <fa:IconBlock Icon="Download" Foreground="#0087d2" />
+                                    <Label Margin="5,0,0,0" Content="Download model" FontSize="12" FontStretch="UltraExpanded" FontWeight="Bold" Foreground="Black" />
+                                </StackPanel>
+                            </Button>
                         </StackPanel>
 
                     </StackPanel>
 
-                    <StackPanel  Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Stretch" VerticalAlignment="Center"  Margin="100,0,100,0" Height="50">
-                        <TextBlock FontSize="15"  Width="130"  VerticalAlignment="Center"  TextAlignment="Left">Traning model:</TextBlock>
-                        <TextBlock Name="Accuracy" FontSize="15"  Width="130"  VerticalAlignment="Center"  TextAlignment="Left">Accuracy: 0%</TextBlock>
-                        <Button Click="TrainButton_Click" VerticalAlignment="Center"  Width="80" Height="30" FontSize="15" FontWeight="Bold" Margin="0,0,10,0">TRAIN</Button>
-                        <Button Click="SaveModelFileButton_Click" Width="130" Height="30" FontSize="15" FontWeight="Bold" Margin="0,0,10,0" Background="White" BorderThickness="0">
-                            <StackPanel Orientation="Horizontal">
-                                <fa:IconBlock Icon="Download" Foreground="#0087d2" />
-                                <Label Margin="5,0,0,0" Content="Download model" FontSize="12" FontStretch="UltraExpanded" FontWeight="Bold" Foreground="Black" />
-                            </StackPanel>
-                        </Button>
-                    </StackPanel>
+
+
+                    <Image  Grid.Row="4" HorizontalAlignment="Center"  Width="1400" VerticalAlignment="Center"  Margin="0,0,0,0" Name="HistoryImg" Stretch="Uniform" Height="300" />
+
 
                 </Grid>
             </TabItem>
@@ -235,7 +237,8 @@
 
                 <Grid>
                     <Grid.ColumnDefinitions >
-                        <ColumnDefinition Width="183*"/>
+                        <ColumnDefinition Width="135*"/>
+                        <ColumnDefinition Width="48*"/>
                         <ColumnDefinition Width="664*"/>
                         <ColumnDefinition Width="424*"/>
                         <ColumnDefinition Width="424*"/>
@@ -251,7 +254,7 @@
                     </Grid.RowDefinitions>
 
 
-                    <StackPanel  Grid.Column="0"  Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center"  Margin="100,0,0,0" Grid.ColumnSpan="2" >
+                    <StackPanel  Grid.Column="0"  Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center"  Margin="100,0,0,0" Grid.ColumnSpan="3" >
                         <Button  Click="LoadModelButton_Click" Width="120" Height="30" FontSize="15" FontWeight="Bold" Margin="0,0,10,0" Background="White" BorderThickness="0">
                             <StackPanel Orientation="Horizontal"  HorizontalAlignment="Left">
                                 <fa:IconBlock Icon="FileImport" Foreground="#0087d2"  HorizontalAlignment="Left"/>
@@ -270,18 +273,19 @@
 
                     </StackPanel>-->
 
-                    <StackPanel  Grid.Row="2" Grid.ColumnSpan="4"  Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="132,0,0,0" >
+                    <StackPanel  Grid.Row="2" Grid.ColumnSpan="5"  Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="132,0,0,0" >
                         <ProgressBar  HorizontalAlignment="Center"  Name="TestRecordingProgressBar" Minimum="0" Maximum="100" Width="1300" Height="30" VerticalAlignment="Bottom" Margin="10" />
                         <Button Click="StartTest" Width="100" Height="30" FontSize="15" FontWeight="Bold" Margin="0,0,10,0" IsEnabled="True" x:Name="StartTestBtn">START</Button>
                         <Button Click="StopTest" Width="100" Height="30" FontSize="15" FontWeight="Bold" Margin="0,0,10,0" IsEnabled="False"  x:Name="StopTestBtn">STOP</Button>
+                        <Button Click="ScanCode" Width="80" Height="20" FontSize="10" FontWeight="Bold" Margin="0,0,10,0"   x:Name="ScanCodeBtn">BYPASS SCAN</Button>
 
                     </StackPanel>
 
-                    <ScrollViewer Name="MediaPlayerScrollViewer" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3">
+                    <ScrollViewer Name="MediaPlayerScrollViewer" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="4">
                         <StackPanel x:Name="MediaPlayerStack"></StackPanel>
                     </ScrollViewer>
 
-                    <StackPanel Grid.Row="3" Grid.Column="3"  HorizontalAlignment="Center" VerticalAlignment="Center"  >
+                    <StackPanel Grid.Row="3" Grid.Column="4"  HorizontalAlignment="Center" VerticalAlignment="Center"  >
                         <Label  x:Name="ResultTime" Width="400" Height="200" FontSize="100"     Foreground="White"  Background="#0087d2" HorizontalContentAlignment="Center"   VerticalContentAlignment="Center"  HorizontalAlignment="Center" VerticalAlignment="Center" >0/3</Label>
                         <Label Width="400" Height="10" FontSize="100"     Background="White" HorizontalContentAlignment="Center"   VerticalContentAlignment="Center"  HorizontalAlignment="Center" VerticalAlignment="Center" >0/3</Label>
                         <Label  x:Name="ResultFinal" Width="400" Height="300" FontSize="100"     Foreground="White"  Background="White" HorizontalContentAlignment="Center"   VerticalContentAlignment="Center"  HorizontalAlignment="Center" VerticalAlignment="Center" ></Label>
@@ -341,11 +345,11 @@ HorizontalAlignment="Left" VerticalAlignment="Top" />
 
 
             <Button Margin="0 0 0 0" FontSize="1"  Width="20" Height="20" HorizontalAlignment="Right" VerticalAlignment="Center" Click="CheckCommunication_Click" Grid.Column="1">
-                <fa:IconImage Icon="RotateRight" Foreground="Black" Width="15" Height="15"  />
+                <fa:IconImage Icon="RotateRight" Foreground="Black" Width="15" Height="100"  />
             </Button>
 
 
         </Grid>
     </Grid>
-    
+
 </Window>

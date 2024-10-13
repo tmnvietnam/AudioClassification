@@ -9,13 +9,44 @@ import win32pipe
 import win32file
 import win32con
 
+SAMPLING_RATE = 22050
 WORKING_DIR = ''
 MODEL_PATH = ''
+HISTORY_IMG_PATH = ''
+
 PIPE_NAME = r'\\.\pipe\TensorflowService'     
 N = 4
 
+# Function to plot training and validation accuracy and loss
+def plot_training_history(history, filename):
+    
+    # Plot accuracy
+    plt.figure(figsize=(12, 4))
+    
+    plt.subplot(1, 2, 1)
+    plt.plot(history.history['accuracy'], label='Train Accuracy')
+    plt.plot(history.history['val_accuracy'], label='Val Accuracy')
+    plt.title('Training and Validation Accuracy')
+    plt.xlabel('Epoch')
+    plt.ylabel('Accuracy')
+    plt.legend()
+
+    # Plot loss
+    plt.subplot(1, 2, 2)
+    plt.plot(history.history['loss'], label='Train Loss')
+    plt.plot(history.history['val_loss'], label='Val Loss')
+    plt.title('Training and Validation Loss')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.legend()
+  
+    plt.savefig(filename)
+
+    # Optionally, close the plot to free memory
+    plt.close()
+    
 # 1. Load and preprocess the data in the frequency domain using FFT
-def load_audio_files_fft(data_dir, labels, sr=22050):
+def load_audio_files_fft(data_dir, labels):
     audio_data = []
     audio_labels = []
     
@@ -25,9 +56,9 @@ def load_audio_files_fft(data_dir, labels, sr=22050):
             if file.endswith('.wav'):
                 file_path = os.path.join(folder_path, file)
                 # Load the audio file
-                audio, _ = librosa.load(file_path, sr=sr)
+                audio, _ = librosa.load(file_path, sr=SAMPLING_RATE)
                 # Apply FFT to convert to the frequency domain
-                fft = np.fft.fft(audio, n=sr)  # Compute the FFT
+                fft = np.fft.fft(audio, n=SAMPLING_RATE)  # Compute the FFT
                 fft_magnitude = np.abs(fft[:sr // 2])  # Take magnitude of the FFT and only positive frequencies
                 audio_data.append(fft_magnitude)
                 audio_labels.append(labels.index(label))
@@ -40,14 +71,13 @@ def load_audio_files_fft(data_dir, labels, sr=22050):
 def create_dense_model(input_shape, num_classes):
     model = tf.keras.models.Sequential([
         tf.keras.layers.InputLayer(input_shape=input_shape),
-        tf.keras.layers.Dense(22050//10, activation='relu'),
-        tf.keras.layers.Dropout(0.5),
-        tf.keras.layers.Dense(22050//50, activation='relu'),
-        tf.keras.layers.Dropout(0.5),
-        tf.keras.layers.Dense(22050//150, activation='relu'),
-        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dense(600, activation='relu'),
+        tf.keras.layers.Dropout(0.5),        
+        tf.keras.layers.Dense(300, activation='relu'),
+        tf.keras.layers.Dropout(0.6),        
         tf.keras.layers.Dense(num_classes, activation='softmax')
     ])
+    
     
     model.compile(optimizer='adam',
                   loss='sparse_categorical_crossentropy',
@@ -55,7 +85,7 @@ def create_dense_model(input_shape, num_classes):
     return model
     
 # 3. Main code to execute training
-def train(dataset_path):
+def train(dataset_path, epochs, batch_size):
     data_dir = dataset_path
     labels = ["ng", "ok"]  # Replace with your actual labels
     
@@ -66,7 +96,7 @@ def train(dataset_path):
     X = X / np.max(X)  # Scale the features between 0 and 1
     
     # Split into training and validation sets
-    X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.20, random_state=42)
+    X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
     
     # Create the model
     input_shape = (X_train.shape[1],)  # Input shape is based on FFT size
@@ -74,48 +104,47 @@ def train(dataset_path):
     model = create_dense_model(input_shape, num_classes)       
     
     # Train the model
-    history = model.fit(X_train, y_train, 
-                    validation_data=(X_val, y_val),
-                    epochs=20,
-                    batch_size=32)
+    history = model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=epochs, batch_size=batch_size)
     
+    # Plot training history
+    plot_training_history(history, HISTORY_IMG_PATH)
+
     # Evaluate the model
     test_loss, test_acc = model.evaluate(X_val, y_val, verbose=2)
     print(f"Test accuracy: {test_acc}")
+    print(f"Test loss: {test_loss}")
 
     # Save the model
     model.save(MODEL_PATH)
     
-    return test_acc
+    return test_acc, test_loss
 
 # 4. Load the trained model
 def load_model(model_file):
     return tf.keras.models.load_model(model_file)
 
 # 5. Preprocess the audio using FFT
-def preprocess_audio_fft(audio, sr=22050):
+def preprocess_audio_fft(audio):
     # Load the audio file    
     # Apply FFT to convert to the frequency domain
-    fft = np.fft.fft(audio, n=sr)  # Compute the FFT
-    fft_magnitude = np.abs(fft[:sr // 2])  # Take magnitude of the FFT and only positive frequencies
+    fft = np.fft.fft(audio, n=SAMPLING_RATE)  # Compute the FFT
+    fft_magnitude = np.abs(fft[:SAMPLING_RATE // 2])  # Take magnitude of the FFT and only positive frequencies
     # Normalize the data (same normalization as in training)
     fft_magnitude = fft_magnitude / np.max(fft_magnitude)
     
     return fft_magnitude
 
 # 6. Predict the label of a new audio file
-def predict_audio_file(file_path, model_file, labels, sr=22050):
+def predict_audio_file(file_path, model_file, labels):
     # Load the model
     model = load_model(model_file)       
     
-    audio, _ = librosa.load(file_path, sr=sr)   
+    audio, _ = librosa.load(file_path, sr=SAMPLING_RATE)   
     
-    # for i in range((N*2)-1):
-    #     segment_audio = audio[i*len(audio)//(N*2):(i+2)*len(audio)//(N*2)]
     for i in range((N*4)-1):
         segment_audio = audio[i*len(audio)//(N*4):(i+4)*len(audio)//(N*4)]
         
-        fft_magnitude = preprocess_audio_fft(segment_audio, sr=sr)
+        fft_magnitude = preprocess_audio_fft(segment_audio)
     
         # Reshape the data to match the input shape of the model (1 sample, input_length)
         input_data = fft_magnitude.reshape(1, -1)
@@ -146,13 +175,15 @@ def predict(wav_index , model_path, target_label_name):
 def main():
     global WORKING_DIR
     global MODEL_PATH
+    global HISTORY_IMG_PATH
     
     home_directory = os.path.expanduser("~")
     WORKING_DIR = os.path.join(home_directory, ".tensorflow_service")
     os.makedirs(WORKING_DIR, exist_ok=True)
     os.makedirs(os.path.join(WORKING_DIR, "audio"), exist_ok=True)
     
-    MODEL_PATH = os.path.join(WORKING_DIR, 'model.h5')
+    MODEL_PATH = os.path.join(WORKING_DIR, 'model.h5')    
+    HISTORY_IMG_PATH = os.path.join(WORKING_DIR, 'history.png')
     
     while (True):        
         # Create a named pipe
@@ -186,10 +217,13 @@ def main():
             
         if(data.decode().startswith("train@")):
             
-            dataset_path = data.decode().split("@")[1]              
-            accuracy = train(dataset_path)
+            dataset_path = data.decode().split("@")[1]      
+            epochs = data.decode().split("@")[2]              
+            batch_size = data.decode().split("@")[3]              
+
+            accuracy, loss = train(dataset_path, int(epochs), int(batch_size))
             
-            response = f'response:{accuracy}'
+            response = f'response:{accuracy}:{loss}'
             win32file.WriteFile(pipe, bytes(response, "utf-8"))
             print(response)
             
