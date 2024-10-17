@@ -292,7 +292,7 @@ namespace SoundKit
 
             while (true)
             {
-                fileName = $"{fileNumber:D3}.wav";
+                fileName = $"{fileNumber:D4}.wav";
                 string fullPath = Path.Combine(folderPath, fileName);
 
                 if (!File.Exists(fullPath))
@@ -1105,8 +1105,8 @@ namespace SoundKit
                             if (float.TryParse(accuracyPart, out float accuracy) && float.TryParse(lossPart, out float loss))
                             {
                                 // Format the accuracy value to two decimal places
-                                string formattedAccuracy = (accuracy * 100).ToString("F2");
-                                string formattedLoss = (loss * 100).ToString("F2");
+                                string formattedAccuracy = (accuracy * 100).ToString("F3");
+                                string formattedLoss = (loss * 100).ToString("F3");
 
 
                                 // Update the UI (assuming this is a WPF application)

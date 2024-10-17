@@ -47,7 +47,7 @@ namespace SoundKit
             PlotModelLearningPage = new PlotModel { Title = "Audio Waveform" };
             PlotModelLearningPage.Series.Add(new LineSeries { LineStyle = LineStyle.Solid });
             PlotModelLearningPage.Axes.Add(new LinearAxis { Position = AxisPosition.Bottom, Title = $"Time  ({(int)(1 / (float)AudioRecorder.SampleRate * 1000000)} microsec per sample) " });
-            PlotModelLearningPage.Axes.Add(new LinearAxis { Position = AxisPosition.Left, Title = "Amplitude (dB)", Minimum = -100, Maximum = 250 });
+            PlotModelLearningPage.Axes.Add(new LinearAxis { Position = AxisPosition.Left, Title = "Amplitude (dB)", Minimum = -100, Maximum = 10 });
 
             AudioRecorderLearningPage = new AudioRecorder(idMic, seconds);
             AudioRecorderTestingPage = new AudioRecorder(idMic, seconds);
@@ -56,7 +56,7 @@ namespace SoundKit
             PlotModelRealtimeTime = new PlotModel { Title = "Time Domain" };
             PlotModelRealtimeTime.Series.Add(new LineSeries() { Color = OxyColor.FromRgb(0, 135, 210) });
             PlotModelRealtimeTime.Axes.Add(new LinearAxis { Position = AxisPosition.Bottom, Title = $"Time ({(int)(1 / (float)AudioRecorder.SampleRate * 1000000)} microsec per sample) " });
-            PlotModelRealtimeTime.Axes.Add(new LinearAxis { Position = AxisPosition.Left, Title = "Amplitude (dB)", Minimum = -100, Maximum = 250 });
+            PlotModelRealtimeTime.Axes.Add(new LinearAxis { Position = AxisPosition.Left, Title = "Amplitude (dB)", Minimum = -100, Maximum = 25 });
 
 
             // Initialize OxyPlot

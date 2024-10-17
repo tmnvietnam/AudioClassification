@@ -1,21 +1,26 @@
 import os
-import librosa
-import numpy as np
-import tensorflow as tf
-from sklearn.model_selection import train_test_split
-import matplotlib.pyplot as plt
+import io
+import logging
 
 import win32pipe
 import win32file
 import win32con
 
-SAMPLING_RATE = 22050
+import librosa
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.io import wavfile
+
+import tensorflow as tf
+from sklearn.model_selection import train_test_split
+
+import features
+import cfg
+
 WORKING_DIR = ''
 MODEL_PATH = ''
 HISTORY_IMG_PATH = ''
 
-PIPE_NAME = r'\\.\pipe\TensorflowService'     
-N = 4
 
 # Function to plot training and validation accuracy and loss
 def plot_training_history(history, filename):
@@ -44,9 +49,8 @@ def plot_training_history(history, filename):
 
     # Optionally, close the plot to free memory
     plt.close()
-    
-# 1. Load and preprocess the data in the frequency domain using FFT
-def load_audio_files_fft(data_dir, labels):
+
+def load_dataset(data_dir, labels):
     audio_data = []
     audio_labels = []
     
@@ -56,11 +60,16 @@ def load_audio_files_fft(data_dir, labels):
             if file.endswith('.wav'):
                 file_path = os.path.join(folder_path, file)
                 # Load the audio file
-                audio, _ = librosa.load(file_path, sr=SAMPLING_RATE)
-                # Apply FFT to convert to the frequency domain
-                fft = np.fft.fft(audio, n=SAMPLING_RATE)  # Compute the FFT
-                fft_magnitude = np.abs(fft[:sr // 2])  # Take magnitude of the FFT and only positive frequencies
-                audio_data.append(fft_magnitude)
+                audio, _ = librosa.load(file_path, sr=cfg.SAMPLING_RATE)
+               
+                frequency_features = features.extract_frequency_domain_features(audio, cfg.SAMPLING_RATE)
+                time_features = features.extract_time_domain_features(audio, cfg.SAMPLING_RATE)
+
+                combined_features = np.hstack([time_features, frequency_features])                
+                combined_features = combined_features /  np.max(combined_features)               
+
+
+                audio_data.append(combined_features)
                 audio_labels.append(labels.index(label))
     
     audio_data = np.array(audio_data)
@@ -71,9 +80,9 @@ def load_audio_files_fft(data_dir, labels):
 def create_dense_model(input_shape, num_classes):
     model = tf.keras.models.Sequential([
         tf.keras.layers.InputLayer(input_shape=input_shape),
-        tf.keras.layers.Dense(600, activation='relu'),
-        tf.keras.layers.Dropout(0.5),        
         tf.keras.layers.Dense(300, activation='relu'),
+        tf.keras.layers.Dropout(0.5),        
+        tf.keras.layers.Dense(100, activation='relu'),
         tf.keras.layers.Dropout(0.6),        
         tf.keras.layers.Dense(num_classes, activation='softmax')
     ])
@@ -86,25 +95,23 @@ def create_dense_model(input_shape, num_classes):
     
 # 3. Main code to execute training
 def train(dataset_path, epochs, batch_size):
-    data_dir = dataset_path
-    labels = ["ng", "ok"]  # Replace with your actual labels
+    data_dir = dataset_path    
     
     # Load the audio data and extract frequency components using FFT
-    X, y = load_audio_files_fft(data_dir, labels)
-    
-    # Normalize the data
+    X, y = load_dataset(data_dir, cfg.LABELS)    
+   
     X = X / np.max(X)  # Scale the features between 0 and 1
-    
+
     # Split into training and validation sets
     X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
     
     # Create the model
     input_shape = (X_train.shape[1],)  # Input shape is based on FFT size
-    num_classes = len(labels)
+    num_classes = len(cfg.LABELS)
     model = create_dense_model(input_shape, num_classes)       
     
     # Train the model
-    history = model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=epochs, batch_size=batch_size)
+    history = model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=cfg.EPOCHS, batch_size=cfg.BATCH_SIZE)
     
     # Plot training history
     plot_training_history(history, HISTORY_IMG_PATH)
@@ -123,53 +130,56 @@ def train(dataset_path, epochs, batch_size):
 def load_model(model_file):
     return tf.keras.models.load_model(model_file)
 
-# 5. Preprocess the audio using FFT
-def preprocess_audio_fft(audio):
-    # Load the audio file    
-    # Apply FFT to convert to the frequency domain
-    fft = np.fft.fft(audio, n=SAMPLING_RATE)  # Compute the FFT
-    fft_magnitude = np.abs(fft[:SAMPLING_RATE // 2])  # Take magnitude of the FFT and only positive frequencies
-    # Normalize the data (same normalization as in training)
-    fft_magnitude = fft_magnitude / np.max(fft_magnitude)
-    
-    return fft_magnitude
-
 # 6. Predict the label of a new audio file
 def predict_audio_file(file_path, model_file, labels):
     # Load the model
     model = load_model(model_file)       
     
-    audio, _ = librosa.load(file_path, sr=SAMPLING_RATE)   
+    _, audio_filter = wavfile.read(file_path)
     
-    for i in range((N*4)-1):
-        segment_audio = audio[i*len(audio)//(N*4):(i+4)*len(audio)//(N*4)]
+    audio, _ = librosa.load(file_path, sr=cfg.SAMPLING_RATE)   
+
+    for i in range(int((2*cfg.T-1)*cfg.N+1)):
+        segment_audio = recorded_audio[i*len(recorded_audio)//(int(2*cfg.T*cfg.N)):(i+cfg.N)*len(recorded_audio)//(int(2*cfg.T*cfg.N))]
+        # segment_audio_filter = audio_filter[i*len(audio_filter)//(N*4):(i+4)*len(audio_filter)//(N*4)]
         
-        fft_magnitude = preprocess_audio_fft(segment_audio)
-    
-        # Reshape the data to match the input shape of the model (1 sample, input_length)
-        input_data = fft_magnitude.reshape(1, -1)
+        frequency_features = features.extract_frequency_domain_features(audio, cfg.SAMPLING_RATE)
+        time_features = features.extract_time_domain_features(audio, cfg.SAMPLING_RATE)
         
-        # Predict the label
-        predictions = model.predict(input_data)
+        # Combine features
+        combined_features = np.hstack([time_features, frequency_features])
+        
+        combined_features = combined_features / np.max(combined_features)
+        
+        # Reshape the features to match the input shape of the model
+        input_data = combined_features.reshape(1, -1)        
+        
+        # Predict using the trained model
+        predictions = model.predict(input_data, verbose=0)
+        
+        # Return the predicted class
         predicted_label_index = np.argmax(predictions, axis=1)[0]
         
-        # Map the predicted index back to the corresponding label
-        predicted_label = labels[predicted_label_index]
-
-        if (predicted_label == "ok"):
-            return "ok"           
-   
-    return "ng"       
+        # Get the label name from the index
+        predicted_label = labels[predicted_label_index]       
+    
+        if (predicted_label == "ok" ):
+            return "ok"
+            # image = features.plot_wav_to_opencv_image(segment_audio_filter)            
+            # filter_result = features.pos_filter(image)
+      
+            # if filter_result:
+            #     return "ok"                 
+       
+    return "ng"     
         
 
 # 7. Example usage for prediction
-def predict(wav_index , model_path, target_label_name):
-    labels = ["ng", "ok"]  # Replace with your actual labels
-    
+def predict(wav_index , model_path, target_label_name):    
     file_name = f'{wav_index}.wav'   
     wave_path = os.path.join(os.path.join(WORKING_DIR, 'audio'), file_name)   
 
-    predicted_label = predict_audio_file(wave_path, model_path, labels)
+    predicted_label = predict_audio_file(wave_path, model_path, cfg.LABELS)
     return predicted_label == target_label_name
 
 def main():
@@ -188,7 +198,7 @@ def main():
     while (True):        
         # Create a named pipe
         pipe = win32pipe.CreateNamedPipe(
-            PIPE_NAME,
+            cfg.PIPE_NAME,
             win32pipe.PIPE_ACCESS_DUPLEX,
             win32pipe.PIPE_TYPE_MESSAGE | win32pipe.PIPE_READMODE_MESSAGE | win32pipe.PIPE_WAIT,
             1, 65536, 65536, 0, None
