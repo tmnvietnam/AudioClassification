@@ -702,112 +702,47 @@ namespace SoundKit
                             bool resultSound = false;
                             for (int idxSound = 0; idxSound < 3; idxSound++)
                             {
-                                for (int indexRetry = 0; indexRetry < maxRetryTime; indexRetry++)
+
+                                try
                                 {
-                                    try
+                                    idAudioTrain++;
+                                    //await viewModel.StartRecordingSavingAsync(idAudioTrain);
+
+                                    if (Predict(idAudioTrain, modelFilePath))
                                     {
-                                        idAudioTrain++;
-                                        await viewModel.StartRecordingSavingAsync(idAudioTrain);
-
-                                        if (!(indexRetry < maxRetryTime - 1) && EnableReTraining)
-                                        {
-                                            // Optionally, handle waiting for user interaction here
-
-                                            // Wait for either Button A or Button B click
-                                            string clickedButton = await WaitForBtnClick();
-                                            // Optionally handle which button was clicked
-                                            // For example:
-                                            if (clickedButton == "StopBtn")
-                                            {
-                                                resultSound = false;
-                                                break;
-                                            }
-                                            if (clickedButton == "TrainBtn")
-                                            {
-                                                if (audioForTrain.Count > 0)
-                                                {
-                                                    audioForTrain.ForEach(audio =>
-                                                    {
-                                                        if (audio.Item2 == 1)
-                                                        {
-                                                            string fileName = GetNextFileName(okFolderPath);
-                                                            string filePath = Path.Combine(okFolderPath, fileName);
-                                                            File.Copy(Path.Combine(viewModel.BackendPath, $"audio\\{audio.Item1}.wav"), filePath);
-                                                        }
-                                                        else
-                                                        {
-                                                            string fileName = GetNextFileName(ngFolderPath);
-                                                            string filePath = Path.Combine(ngFolderPath, fileName);
-                                                            File.Copy(Path.Combine(viewModel.BackendPath, $"audio\\{audio.Item1}.wav"), filePath);
-                                                        }
-
-                                                    });
-
-                                                    string datasetPath = datasetDir.Replace("\\", "/");
-                                                    await TrainAsync(datasetPath);
-                                                    File.Copy(Path.Combine(viewModel.BackendPath, "model.h5"), modelFilePath, overwrite: true);
-
-                                                    NumberNGDataSet.Text = $"NG sound: {CountFilesInFolder(ngFolderPath)} files";
-                                                    NumberOKDataSet.Text = $"OK sound: {CountFilesInFolder(okFolderPath)} files";
-
-                                                }
-
-                                                await WaitForContinueBtnClick();
-
-                                                timePass++;
-                                                ResultTime.Content = $"{timePass}/3";
-                                                resultSound = true;
-
-
-                                                break;
-                                            }
-                                            if (clickedButton == "ContinueBtn")
-                                            {
-
-                                                timePass++;
-                                                ResultTime.Content = $"{timePass}/3";
-                                                resultSound = true;
-
-                                                break;
-                                            }
-                                        }
-
-                                        if (Predict(idAudioTrain, modelFilePath))
-                                        {
-                                            AddMediaPlayer(idAudioTrain, OxyColors.Green);
-
-                                            timePass++;
-                                            ResultTime.Content = $"{timePass}/3";
-
-                                            resultSound = true;
-
-
-                                            break;
-
-                                        }
-                                        else
-                                        {
-                                            AddMediaPlayer(idAudioTrain, OxyColors.Red);
-
-                                            resultSound = false;
-                                        }
-
+                                        AddMediaPlayer(idAudioTrain, OxyColors.Green);
                                         MediaPlayerScrollViewer.ScrollToEnd();
 
+                                        timePass++;
+                                        ResultTime.Content = $"{timePass}/3";
 
+                                        resultSound = true;
+
+
+                                        continue;
 
                                     }
-                                    catch (Exception ex)
+                                    else
                                     {
-                                        // Handle exceptions from recording or prediction
-                                        MessageBox.Show($"An error occurred: {ex.Message}");
-                                    }
-                                }
+                                        AddMediaPlayer(idAudioTrain, OxyColors.Red);
+                                        MediaPlayerScrollViewer.ScrollToEnd();
 
-                                if (!resultSound)
-                                {
-                                    break;
+                                        resultSound = false;
+
+
+                                        break;
+                                    }
+
+
+
+
                                 }
+                                catch (Exception ex)
+                                {
+                                    // Handle exceptions from recording or prediction
+                                    MessageBox.Show($"An error occurred: {ex.Message}");
+                                }                            
+
                             }
 
                             metatTimeTotal++;
@@ -1011,6 +946,94 @@ namespace SoundKit
             timer.Start();
 
             PCBViewModel.UpdatePlot(plotModel, viewModel.AudioRecorderTestingPage.GetAudioData());
+
+
+        }
+
+        public bool PredictSegment(string modelPath)
+        {
+            StringBuilder buffer = new StringBuilder();
+
+            try
+            {
+                // Create a NamedPipeClientStream
+                using (var pipeClient = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.None))
+                {
+                    // Connect to the pipe
+                    pipeClient.Connect();
+
+                    // Write to the pipe
+                    string message = $"test@{modelPath}";
+                    byte[] messageBytes = Encoding.UTF8.GetBytes(message);
+                    pipeClient.Write(messageBytes, 0, messageBytes.Length);
+
+                    // Read the response
+                    byte[] byteBuffer = new byte[64 * 1024]; // 64 KB buffer
+
+                    while (true)
+                    {
+                        int bytesRead = pipeClient.Read(byteBuffer, 0, byteBuffer.Length);
+                        string receivedData = Encoding.UTF8.GetString(byteBuffer, 0, bytesRead);
+                        buffer.Append(receivedData);
+
+                        if (buffer.ToString().Contains("endingtest"))
+                        {
+                            break;
+                        }
+                        // Check if we have a complete message in the buffer
+                        while (buffer.ToString().Contains("response:"))
+                        {
+                            // Find the start and end of a message
+                            int startIndex = buffer.ToString().IndexOf("response:");
+                            int endIndex = buffer.ToString().IndexOf(":end", startIndex); 
+
+                            // If a complete message is found
+                            if (endIndex != -1)
+                            {
+                                // Extract the message
+                                string fullMessage = buffer.ToString().Substring(startIndex, endIndex - startIndex + 1);
+
+                                // Process the extracted message
+                                //string result = ProcessResponse(fullMessage);
+                                try
+                                {
+                                    // Extract the part after "response:"
+                                    string resultPart = fullMessage.Split(new[] { "response:" }, StringSplitOptions.None)[1].Trim();
+
+                                }
+                                catch (Exception ex)
+                                {
+                                    Console.WriteLine("Error processing response: " + ex.Message);
+                                }
+
+                              
+                                // Remove the processed message from the buffer
+                                buffer.Remove(startIndex, endIndex + 4 - startIndex);
+                             
+
+                            }
+                            else
+                            {
+                                // No complete message found yet, wait for more data
+                                break;
+                            }
+                        }
+
+
+                    }
+
+                }
+            }
+            catch (IOException ex)
+            {
+                Console.WriteLine($"I/O error: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Unexpected error: {ex.Message}");
+            }
+
+            return false ;
 
 
         }

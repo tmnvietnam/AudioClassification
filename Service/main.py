@@ -1,6 +1,8 @@
 import os
 import io
 import logging
+import queue
+import threading
 
 import win32pipe
 import win32file
@@ -14,12 +16,33 @@ from scipy.io import wavfile
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
 
-import features
 import cfg
+
 
 WORKING_DIR = ''
 MODEL_PATH = ''
 HISTORY_IMG_PATH = ''
+
+q = queue.Queue()
+stop_flag = threading.Event()
+
+
+def extract_features(audio, sr):    
+    zcr = np.mean(librosa.feature.zero_crossing_rate(audio))   
+    rms = np.mean(librosa.feature.rms(y=audio))    
+    peak_amp = np.max(np.abs(audio))    
+    mean_amp = np.mean(audio)
+    
+    mfccs = np.mean(librosa.feature.mfcc(y=audio, sr=sr), axis=1)
+    spectral_bandwidth = np.mean(librosa.feature.spectral_bandwidth(y=audio, sr=sr))
+    spectral_centroid = np.mean(librosa.feature.spectral_centroid(y=audio, sr=sr))
+    
+    # Apply FFT to convert to the frequency domain
+    fft = np.fft.fft(audio, n=sr)  # Compute the FFT
+    fft_magnitude = np.abs(fft[:sr // 2])  # Take magnitude of the FFT and only positive frequencies       
+
+    # return np.hstack([ np.array([zcr, rms, peak_amp, mean_amp]), fft_magnitude])
+    return np.hstack([ np.array([zcr, rms, peak_amp, mean_amp]),  mfccs, spectral_centroid , spectral_bandwidth, fft_magnitude])
 
 
 # Function to plot training and validation accuracy and loss
@@ -62,14 +85,13 @@ def load_dataset(data_dir, labels):
                 # Load the audio file
                 audio, _ = librosa.load(file_path, sr=cfg.SAMPLING_RATE)
                
-                frequency_features = features.extract_frequency_domain_features(audio, cfg.SAMPLING_RATE)
-                time_features = features.extract_time_domain_features(audio, cfg.SAMPLING_RATE)
+                features = extract_features(audio, cfg.SAMPLING_RATE)
 
-                combined_features = np.hstack([time_features, frequency_features])                
-                combined_features = combined_features /  np.max(combined_features)               
+                 
+                features = features /  np.max(features)               
 
 
-                audio_data.append(combined_features)
+                audio_data.append(features)
                 audio_labels.append(labels.index(label))
     
     audio_data = np.array(audio_data)
@@ -143,16 +165,12 @@ def predict_audio_file(file_path, model_file, labels):
         segment_audio = recorded_audio[i*len(recorded_audio)//(int(2*cfg.T*cfg.N)):(i+cfg.N)*len(recorded_audio)//(int(2*cfg.T*cfg.N))]
         # segment_audio_filter = audio_filter[i*len(audio_filter)//(N*4):(i+4)*len(audio_filter)//(N*4)]
         
-        frequency_features = features.extract_frequency_domain_features(audio, cfg.SAMPLING_RATE)
-        time_features = features.extract_time_domain_features(audio, cfg.SAMPLING_RATE)
+        features = extract_features(audio, cfg.SAMPLING_RATE)        
         
-        # Combine features
-        combined_features = np.hstack([time_features, frequency_features])
-        
-        combined_features = combined_features / np.max(combined_features)
+        features = features / np.max(features)
         
         # Reshape the features to match the input shape of the model
-        input_data = combined_features.reshape(1, -1)        
+        input_data = features.reshape(1, -1)        
         
         # Predict using the trained model
         predictions = model.predict(input_data, verbose=0)
@@ -182,6 +200,61 @@ def predict(wav_index , model_path, target_label_name):
     predicted_label = predict_audio_file(wave_path, model_path, cfg.LABELS)
     return predicted_label == target_label_name
 
+def sliding_window_detection(model):
+        
+    buffer = np.array([])  # Initial empty buffer to hold incoming samples
+    window_index = 0
+    while not stop_flag.is_set() or not q.empty():
+        if not q.empty():
+            # Get the next chunk of samples from the queue
+            new_samples = q.get()
+
+            # Append the new samples to the buffer
+            buffer = np.concatenate((buffer, new_samples.flatten()))
+
+            # Process the buffer only if we have at least window_size samples
+            while len(buffer) >= cfg.WINDOW_SIZE:
+                # Extract the current window
+                current_window = buffer[:cfg.WINDOW_SIZE]
+                
+                predicted_label = predict(model, current_window, cfg.LABELS)                    
+              
+                predicted_result = predicted_label == "ok"                              
+                    
+                current_window_normalized = current_window / np.max(np.abs(current_window))     
+                
+                response = f'response:result:{predicted_result}:sounddata:{",".join(map(str, current_window_normalized))}:end'
+                win32file.WriteFile(pipe, bytes(response, "utf-8"))
+
+                if (predicted_result):   
+                    stop_flag.set()  # Stop the recording                                   
+                    break
+                                    
+                # Slide the window forward by step_size
+                buffer = buffer[cfg.STEP_SIZE:]
+                window_index = window_index + 1
+
+        else:
+            time.sleep(0.1)  # Avoid busy-waiting if the queue is empty
+            
+    response = 'endingtest'
+    win32file.WriteFile(pipe, bytes(response, "utf-8"))
+
+            
+def record_sound(selected_device):
+    
+    start_time = time.time()  # Record the start time
+    max_duration = 30  # Maximum recording duration in seconds
+    
+    def callback(indata, frames, time, status):                
+        q.put(indata.copy())
+
+    with sd.InputStream(callback=callback, channels=1, samplerate=cfg.SAMPLING_RATE, device=selected_device):
+        while not stop_flag.is_set() and (time.time() - start_time) < max_duration:
+            time.sleep(0.1)  # Keep recording until stop_flag is set
+    
+    stop_flag.set() 
+    
 def main():
     global WORKING_DIR
     global MODEL_PATH
@@ -224,6 +297,27 @@ def main():
             response = f'response:{result}'            
             win32file.WriteFile(pipe, bytes(response, "utf-8"))
             print(response)
+            
+        if(data.decode().startswith("test@")):
+            
+            model_path= data.decode().split("@")[1]  
+            selected_device= data.decode().split("@")[2] 
+ 
+            model = tf.keras.models.load_model(model_path)
+            
+              # Create threads for recording and sliding window detection
+            detect_thread = threading.Thread(target=sliding_window_detection, args=(model,))
+            record_thread = threading.Thread(target=record_sound, args=(selected_device,))
+            
+            # Start the threads
+            detect_thread.start()
+            record_thread.start()
+
+            # Wait for the threads to finish
+            detect_thread.join()
+            record_thread.join()    
+            
+          
             
         if(data.decode().startswith("train@")):
             
