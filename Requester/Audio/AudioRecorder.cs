@@ -1,6 +1,5 @@
 ﻿using NAudio.Wave;
 
-
 namespace SoundKit.Audio
 {
     public class AudioRecorder : IDisposable
@@ -61,7 +60,7 @@ namespace SoundKit.Audio
 
         protected IEnumerable<double> ConvertToDB(short[] samples)
         {
-            const double maxAmplitude = 32768.0; // Maximum value for 16-bit PCM
+            const double maxAmplitude = 32768.0; // Maximum value for 16-bit PCM 
 
             foreach (var sample in samples)
             {

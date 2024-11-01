@@ -51,6 +51,8 @@ namespace SoundKit
         private string modelFilePath = string.Empty;
 
         private string pipeName = "TensorflowService";
+        private int idMicrophone = 0;
+
 
         private int metatTimePass = 0;
         private int metatTimeTotal = 0;
@@ -234,15 +236,18 @@ namespace SoundKit
             SerialConnections.Add(Scanner);
             SerialConnections.Add(SystemIO);
         }
-        public PCBWindow(string titleWindow, int idMIC)
+        public PCBWindow(string titleWindow, int idMIC, string nameService)
         {
             InitializeComponent();
 
             Title = titleWindow;
+            pipeName = nameService;
+            idMicrophone = idMIC;
+
             this.Closed += Window_Closed;
 
 
-            viewModel = new PCBViewModel(idMIC);
+            viewModel = new PCBViewModel(idMicrophone);
 
             DataContext = viewModel;
 
@@ -250,7 +255,7 @@ namespace SoundKit
 
             CheckCommunication_Init();
 
-            InitConnectionBackEndML();
+            //InitConnectionBackEndML();
 
             viewModel.AudioRecorderLearningPage.ProgressChanged += UpdateProgressBar;
             viewModel.AudioRecorderTestingPage.ProgressChanged += UpdateTestProgressBar;
@@ -504,7 +509,7 @@ namespace SoundKit
                     pipeClient.Connect();
 
                     // Write to the pipe
-                    string message = $"init@";
+                    string message = $"init@{idMicrophone}";
                     byte[] messageBytes = Encoding.UTF8.GetBytes(message);
                     pipeClient.Write(messageBytes, 0, messageBytes.Length);
 
@@ -684,12 +689,12 @@ namespace SoundKit
                 {
                     await Dispatcher.Invoke(async () =>
                     {
-                        int maxRetryTime = 60;
+                        //int maxRetryTime = 60;
                         int timePass = 0;
 
-                        ResetMediaPlayer();
+                        //ResetMediaPlayer();
 
-                        int idAudioTrain = -1;
+                        //int idAudioTrain = -1;
 
                         ResultTime.Content = $"{timePass}/3";
 
@@ -705,13 +710,13 @@ namespace SoundKit
 
                                 try
                                 {
-                                    idAudioTrain++;
+                                    //idAudioTrain++;
                                     //await viewModel.StartRecordingSavingAsync(idAudioTrain);
 
-                                    if (Predict(idAudioTrain, modelFilePath))
+                                    if (PredictSegment(modelFilePath, idMicrophone))
                                     {
-                                        AddMediaPlayer(idAudioTrain, OxyColors.Green);
-                                        MediaPlayerScrollViewer.ScrollToEnd();
+                                        //AddMediaPlayer(idAudioTrain, OxyColors.Green);
+                                        //MediaPlayerScrollViewer.ScrollToEnd();
 
                                         timePass++;
                                         ResultTime.Content = $"{timePass}/3";
@@ -724,8 +729,8 @@ namespace SoundKit
                                     }
                                     else
                                     {
-                                        AddMediaPlayer(idAudioTrain, OxyColors.Red);
-                                        MediaPlayerScrollViewer.ScrollToEnd();
+                                        //AddMediaPlayer(idAudioTrain, OxyColors.Red);
+                                        //MediaPlayerScrollViewer.ScrollToEnd();
 
                                         resultSound = false;
 
@@ -950,8 +955,9 @@ namespace SoundKit
 
         }
 
-        public bool PredictSegment(string modelPath)
+        public bool PredictSegment(string modelPath, int idMicrophone)
         {
+            bool result = false;
             StringBuilder buffer = new StringBuilder();
 
             try
@@ -1000,6 +1006,10 @@ namespace SoundKit
                                     // Extract the part after "response:"
                                     string resultPart = fullMessage.Split(new[] { "response:" }, StringSplitOptions.None)[1].Trim();
 
+                                    if (resultPart != null && resultPart.Contains("True")) {
+                                        result = true;
+                                    }
+
                                 }
                                 catch (Exception ex)
                                 {
@@ -1033,7 +1043,7 @@ namespace SoundKit
                 Console.WriteLine($"Unexpected error: {ex.Message}");
             }
 
-            return false ;
+            return result ;
 
 
         }

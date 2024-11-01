@@ -25,7 +25,6 @@ namespace SoundKit
         private string objectFolderPath = string.Empty;
         private string modelFilePath = string.Empty;
 
-        private string pipeName = "MyNamedPipe";
 
         private int metatTimePass = 0;
         private int metatTimeTotal = 0;
@@ -85,7 +84,7 @@ namespace SoundKit
 
             Trace.WriteLine(selectedMicrophoneIndex);
 
-            PCBWindow pcb1Window = new("PCB 1", selectedMicrophoneIndex);
+            PCBWindow pcb1Window = new("PCB 1", selectedMicrophoneIndex, "TensorflowService1");
             pcb1Window.Show();
         }
 
@@ -95,7 +94,7 @@ namespace SoundKit
 
             Trace.WriteLine(selectedMicrophoneIndex);
 
-            PCBWindow pcb1Window = new("PCB 2", selectedMicrophoneIndex);
+            PCBWindow pcb1Window = new("PCB 2", selectedMicrophoneIndex, "TensorflowService2");
             pcb1Window.Show();
         }
 
@@ -103,7 +102,7 @@ namespace SoundKit
         {
             int selectedMicrophoneIndex = MicrophoneComboBox3.SelectedIndex;
 
-            PCBWindow pcb3Window = new("PCB 3", selectedMicrophoneIndex);
+            PCBWindow pcb3Window = new("PCB 3", selectedMicrophoneIndex, "TensorflowService3");
             pcb3Window.Show();
         }
 

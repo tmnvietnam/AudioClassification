@@ -1,8 +1,10 @@
 import os
+import sys
 import io
 import logging
 import queue
 import threading
+import time
 
 import win32pipe
 import win32file
@@ -12,6 +14,7 @@ import librosa
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.io import wavfile
+import sounddevice as sd
 
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
@@ -86,10 +89,8 @@ def load_dataset(data_dir, labels):
                 audio, _ = librosa.load(file_path, sr=cfg.SAMPLING_RATE)
                
                 features = extract_features(audio, cfg.SAMPLING_RATE)
-
                  
                 features = features /  np.max(features)               
-
 
                 audio_data.append(features)
                 audio_labels.append(labels.index(label))
@@ -100,14 +101,20 @@ def load_dataset(data_dir, labels):
 
 # 2. Create a fully connected neural network model
 def create_dense_model(input_shape, num_classes):
-    model = tf.keras.models.Sequential([
-        tf.keras.layers.InputLayer(input_shape=input_shape),
+    model = tf.keras.models.Sequential([ 
+        tf.keras.layers.InputLayer(input_shape=input_shape), 
+        tf.keras.layers.Dense(500, activation='relu'),
+        tf.keras.layers.Dropout(0.5),                  
         tf.keras.layers.Dense(300, activation='relu'),
         tf.keras.layers.Dropout(0.5),        
+        tf.keras.layers.Dense(150, activation='relu'),
+        tf.keras.layers.Dropout(0.5),        
         tf.keras.layers.Dense(100, activation='relu'),
-        tf.keras.layers.Dropout(0.6),        
+        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dense(60, activation='relu'),
+        tf.keras.layers.Dropout(0.5),
         tf.keras.layers.Dense(num_classes, activation='softmax')
-    ])
+    ])    
     
     
     model.compile(optimizer='adam',
@@ -133,7 +140,7 @@ def train(dataset_path, epochs, batch_size):
     model = create_dense_model(input_shape, num_classes)       
     
     # Train the model
-    history = model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=cfg.EPOCHS, batch_size=cfg.BATCH_SIZE)
+    history = model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=epochs, batch_size=batch_size)
     
     # Plot training history
     plot_training_history(history, HISTORY_IMG_PATH)
@@ -157,13 +164,13 @@ def predict_audio_file(file_path, model_file, labels):
     # Load the model
     model = load_model(model_file)       
     
-    _, audio_filter = wavfile.read(file_path)
+    # _, audio_filter = wavfile.read(file_path)
     
-    audio, _ = librosa.load(file_path, sr=cfg.SAMPLING_RATE)   
-
+    recorded_audio, _ = librosa.load(file_path, sr=cfg.SAMPLING_RATE)   
+       
     for i in range(int((2*cfg.T-1)*cfg.N+1)):
         segment_audio = recorded_audio[i*len(recorded_audio)//(int(2*cfg.T*cfg.N)):(i+cfg.N)*len(recorded_audio)//(int(2*cfg.T*cfg.N))]
-        # segment_audio_filter = audio_filter[i*len(audio_filter)//(N*4):(i+4)*len(audio_filter)//(N*4)]
+        segment_audio_filter = audio_filter[i*len(audio_filter)//(N*4):(i+4)*len(audio_filter)//(N*4)]
         
         features = extract_features(audio, cfg.SAMPLING_RATE)        
         
@@ -182,15 +189,9 @@ def predict_audio_file(file_path, model_file, labels):
         predicted_label = labels[predicted_label_index]       
     
         if (predicted_label == "ok" ):
-            return "ok"
-            # image = features.plot_wav_to_opencv_image(segment_audio_filter)            
-            # filter_result = features.pos_filter(image)
-      
-            # if filter_result:
-            #     return "ok"                 
+            return "ok"        
        
     return "ng"     
-        
 
 # 7. Example usage for prediction
 def predict(wav_index , model_path, target_label_name):    
@@ -199,6 +200,30 @@ def predict(wav_index , model_path, target_label_name):
 
     predicted_label = predict_audio_file(wave_path, model_path, cfg.LABELS)
     return predicted_label == target_label_name
+
+def predict_audio_data(audio_data ,model_file, labels):
+    
+    model = load_model(model_file)       
+
+    features = extract_features(audio_data, cfg.SAMPLING_RATE)        
+    
+    features = features / np.max(features)
+    
+    # Reshape the features to match the input shape of the model
+    input_data = features.reshape(1, -1)        
+    
+    # Predict using the trained model
+    predictions = model.predict(input_data, verbose=0)
+    
+    # Return the predicted class
+    predicted_label_index = np.argmax(predictions, axis=1)[0]
+    
+    # Get the label name from the index
+    predicted_label = labels[predicted_label_index]       
+
+    return predicted_label
+       
+
 
 def sliding_window_detection(model):
         
@@ -217,13 +242,14 @@ def sliding_window_detection(model):
                 # Extract the current window
                 current_window = buffer[:cfg.WINDOW_SIZE]
                 
-                predicted_label = predict(model, current_window, cfg.LABELS)                    
+                predicted_label = predict_audio_data(current_window, model, cfg.LABELS)                    
               
                 predicted_result = predicted_label == "ok"                              
                     
                 current_window_normalized = current_window / np.max(np.abs(current_window))     
                 
-                response = f'response:result:{predicted_result}:sounddata:{",".join(map(str, current_window_normalized))}:end'
+                response = f'response:result:{predicted_result}:end'
+                # response = f'response:result:{predicted_result}:sounddata:{",".join(map(str, current_window_normalized))}:end'
                 win32file.WriteFile(pipe, bytes(response, "utf-8"))
 
                 if (predicted_result):   
@@ -255,13 +281,26 @@ def record_sound(selected_device):
     
     stop_flag.set() 
     
-def main():
+def get_device_by_name(name):
+    devices = sd.query_devices()
+    for device in devices:
+        if name.lower() in device['name'].lower():  # Case-insensitive match
+            return device
+    return None  # Return None if no match found
+
+
+def main():    
+    if len(sys.argv) < 2:        
+        exit()
+    else:
+        PIPE_NAME = rf'\\.\pipe\{sys.argv[1] }'               
+        
     global WORKING_DIR
     global MODEL_PATH
     global HISTORY_IMG_PATH
     
     home_directory = os.path.expanduser("~")
-    WORKING_DIR = os.path.join(home_directory, ".tensorflow_service")
+    WORKING_DIR = os.path.join(home_directory, ".soundkit")
     os.makedirs(WORKING_DIR, exist_ok=True)
     os.makedirs(os.path.join(WORKING_DIR, "audio"), exist_ok=True)
     
@@ -271,7 +310,7 @@ def main():
     while (True):        
         # Create a named pipe
         pipe = win32pipe.CreateNamedPipe(
-            cfg.PIPE_NAME,
+            PIPE_NAME,
             win32pipe.PIPE_ACCESS_DUPLEX,
             win32pipe.PIPE_TYPE_MESSAGE | win32pipe.PIPE_READMODE_MESSAGE | win32pipe.PIPE_WAIT,
             1, 65536, 65536, 0, None
@@ -286,7 +325,9 @@ def main():
         if(data.decode().startswith("init@")):                       
             response = f'response:{WORKING_DIR}'
             win32file.WriteFile(pipe, bytes(response, "utf-8"))
-            print(response)
+            print(response)            
+            # Example usage
+            matched_device = get_device_by_name(device_name)
               
         if(data.decode().startswith("predict@")):
             
@@ -301,9 +342,12 @@ def main():
         if(data.decode().startswith("test@")):
             
             model_path= data.decode().split("@")[1]  
-            selected_device= data.decode().split("@")[2] 
+            selected_device= int(data.decode().split("@")[2])
  
             model = tf.keras.models.load_model(model_path)
+            
+         
+            # selected_device = None
             
               # Create threads for recording and sliding window detection
             detect_thread = threading.Thread(target=sliding_window_detection, args=(model,))
