@@ -1,0 +1,156 @@
+﻿<Window x:Class="SoundKit.PCBWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:oxy="http://oxyplot.org/wpf"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:fa="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:SoundKit"
+        mc:Ignorable="d"
+           Title="SoundKit"  Height="1100" Width="1700">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="1*" />
+            <RowDefinition Height="30" />
+        </Grid.RowDefinitions>
+
+        <TabControl Grid.Row="0" >
+            <TabItem Header="Realtime">
+                <Grid   Height="950" VerticalAlignment="Top">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="30"/>
+                        <RowDefinition Height="1*"/>
+                        <RowDefinition Height="1*"/>
+
+                    </Grid.RowDefinitions>
+
+                    <Button HorizontalAlignment="Left" VerticalAlignment="Stretch" Grid.Column="0" Grid.Row="0" Content="RESET ZOOM" Height="30" Width="80" Click="AutoScaleButton_Click"/>
+
+                    <oxy:PlotView Width="1500" Grid.Row="1" Model="{Binding PlotModelRealtimeTime}"/>
+                    <oxy:PlotView Width="1500" Grid.Row="2" Model="{Binding PlotModelRealtimeFreq}"/>
+
+
+
+                </Grid>
+            </TabItem>
+           
+            <TabItem Header="Testing" x:Name="TestingTab">
+
+                <Grid>
+                    <Grid.ColumnDefinitions >
+                        <ColumnDefinition Width="135*"/>
+                        <ColumnDefinition Width="48*"/>
+                        <ColumnDefinition Width="664*"/>
+                        <ColumnDefinition Width="424*"/>
+                        <ColumnDefinition Width="424*"/>
+
+                    </Grid.ColumnDefinitions>
+
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="40"/>
+                        <RowDefinition Height="10"/>
+                        <RowDefinition Height="60"/>
+                        <RowDefinition Height="1*"/>
+                        <RowDefinition Height="60"/>
+                    </Grid.RowDefinitions>
+
+
+                    <StackPanel  Grid.Column="0"  Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center"  Margin="100,0,0,0" Grid.ColumnSpan="3" >
+                        <Button  Click="LoadModelButton_Click" Width="120" Height="30" FontSize="15" FontWeight="Bold" Margin="0,0,10,0" Background="White" BorderThickness="0">
+                            <StackPanel Orientation="Horizontal"  HorizontalAlignment="Left">
+                                <fa:IconBlock Icon="FileImport" Foreground="#0087d2"  HorizontalAlignment="Left"/>
+                                <Label Margin="5,0,0,0" Content="Load model" FontSize="12" FontStretch="UltraExpanded" FontWeight="Bold" Foreground="Black"  HorizontalAlignment="Left"/>
+                            </StackPanel>
+                        </Button>
+                        <TextBlock Name="LoadModelFilePath" FontSize="15"  Margin="0,0,10,0"  VerticalAlignment="Center" FontStyle="Italic"> C:\model</TextBlock>
+
+                    </StackPanel>
+
+
+
+                    <!--<StackPanel  Grid.Column="3" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center"  Margin="236,0,0,0">
+
+                        <CheckBox Checked="EnableTraining_Checked"  Unchecked="UnableTraining_Checked" FontSize="15"     HorizontalContentAlignment="Center" VerticalContentAlignment="Center">Retraining</CheckBox>
+
+                    </StackPanel>-->
+
+                    <StackPanel  Grid.Row="2" Grid.ColumnSpan="5"  Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="132,0,0,0" >
+                        <ProgressBar  HorizontalAlignment="Center"  Name="TestRecordingProgressBar" Minimum="0" Maximum="100" Width="1300" Height="30" VerticalAlignment="Bottom" Margin="10" />
+                        <Button Click="StartTest" Width="100" Height="30" FontSize="15" FontWeight="Bold" Margin="0,0,10,0" IsEnabled="True" x:Name="StartTestBtn">START</Button>
+                        <Button Click="StopTest" Width="100" Height="30" FontSize="15" FontWeight="Bold" Margin="0,0,10,0" IsEnabled="False"  x:Name="StopTestBtn">STOP</Button>
+                        <Button Click="ScanCode" Width="120" Height="20" FontSize="10" FontWeight="Bold" Margin="0,0,10,0"   x:Name="ScanCodeBtn">SIMULATE SCANNING</Button>
+
+                    </StackPanel>
+
+                    <ScrollViewer Name="MediaPlayerScrollViewer" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="4">
+                        <StackPanel x:Name="MediaPlayerStack"></StackPanel>
+                    </ScrollViewer>
+
+                    <StackPanel Grid.Row="3" Grid.Column="4"  HorizontalAlignment="Center" VerticalAlignment="Center"  >
+                        <Label  x:Name="ResultTime" Width="400" Height="200" FontSize="100"     Foreground="White"  Background="#0087d2" HorizontalContentAlignment="Center"   VerticalContentAlignment="Center"  HorizontalAlignment="Center" VerticalAlignment="Center" >0/3</Label>
+                        <Label Width="400" Height="10" FontSize="100"     Background="White" HorizontalContentAlignment="Center"   VerticalContentAlignment="Center"  HorizontalAlignment="Center" VerticalAlignment="Center" >0/3</Label>
+                        <Label  x:Name="ResultFinal" Width="400" Height="300" FontSize="100"     Foreground="White"  Background="White" HorizontalContentAlignment="Center"   VerticalContentAlignment="Center"  HorizontalAlignment="Center" VerticalAlignment="Center" ></Label>
+                        <Label Width="400" Height="10" FontSize="100"     Background="White" HorizontalContentAlignment="Center"   VerticalContentAlignment="Center"  HorizontalAlignment="Center" VerticalAlignment="Center" >0/3</Label>
+                        <Label  x:Name="ResultSumary" Width="400" Height="150" FontSize="50"     Foreground="Black"  Background="White" HorizontalContentAlignment="Center"   VerticalContentAlignment="Center"  HorizontalAlignment="Center" VerticalAlignment="Center" ></Label>
+                    </StackPanel>
+
+                    <!--<StackPanel Grid.Row="4"  Orientation="Horizontal"  HorizontalAlignment="Left" VerticalAlignment="Center" Grid.Column="1" Margin="287,0,0,0" >
+                        <Button  x:Name="StopBtn" Click="StopBtn_Click" Width="100" Height="30" FontSize="15" FontWeight="Bold" Margin="0,0,10,0"  IsEnabled="False" >STOP</Button>
+                        <Button  x:Name="TrainBtn" Click="TrainBtn_Click" Width="100" Height="30" FontSize="15" FontWeight="Bold" Margin="0,0,10,0"  IsEnabled="False" >TRAIN</Button>
+                        <Button  x:Name="ContinueBtn" Click="ContinueBtn_Click" Width="100" Height="30" FontSize="15" FontWeight="Bold" Margin="0,0,10,0"  IsEnabled="False" >CONTINUE</Button>
+                    </StackPanel>-->
+                </Grid>
+
+                <!--<StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"  >
+            <Button  x:Name="OpenPCB1" Click="OpenPCB1Btn_Click" Width="100" Height="30" FontSize="15" FontWeight="Bold" >PCB 1</Button>
+            <Button  x:Name="OpenPCB2" Click="OpenPCB2Btn_Click" Width="100" Height="30" FontSize="15" FontWeight="Bold"  >PCB 2</Button>
+            <Button  x:Name="OpenPCB3" Click="OpenPCB3Btn_Click" Width="100" Height="30" FontSize="15" FontWeight="Bold"  >PCB 3</Button>
+
+        </StackPanel>-->
+            </TabItem>
+
+        </TabControl>
+        <Grid Margin="5" Grid.Row="1"  HorizontalAlignment="Right">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1*" />
+                <ColumnDefinition Width="1*" />
+
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0" Orientation="Horizontal">
+                <StackPanel Margin="0 0 20 0" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" >
+                    <TextBlock  HorizontalAlignment="Center" VerticalAlignment="Center" Width="60">Scanner</TextBlock>
+                    <ComboBox Name="comPortComboBox1" HorizontalAlignment="Left" VerticalAlignment="Top" Width="120" Height="20"  Margin="5 0 0 0"/>
+                    <Rectangle Margin="5 0 0 0" Name="connectionStatusDevice1" Width="20" Height="20" Fill="LightGray" StrokeThickness="1"
+           HorizontalAlignment="Left" VerticalAlignment="Top" />
+                    <StackPanel Margin="0 0 0 0">
+                        <Rectangle  Name="txStatusDevice1" Width="10" Height="10" Fill="LightGray" StrokeThickness="1"
+            HorizontalAlignment="Left" VerticalAlignment="Top" />
+                        <Rectangle  Name="rxStatusDevice1" Width="10" Height="10" Fill="LightGray" StrokeThickness="1"
+            HorizontalAlignment="Left" VerticalAlignment="Top" />
+                    </StackPanel>
+                </StackPanel>
+                <StackPanel Margin="0 0 20 0" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Grid.Column="1">
+                    <TextBlock  HorizontalAlignment="Center" VerticalAlignment="Center" Width="60">SystemIO</TextBlock>
+                    <ComboBox Name="comPortComboBox2" HorizontalAlignment="Left" VerticalAlignment="Top" Width="120" Height="20"  Margin="5 0 0 0"/>
+                    <Rectangle Margin="5 0 0 0" Name="connectionStatusDevice2" Width="20" Height="20" Fill="LightGray" StrokeThickness="1"
+HorizontalAlignment="Left" VerticalAlignment="Top" />
+                    <StackPanel Margin="0 0 0 0">
+                        <Rectangle  Name="txStatusDevice2" Width="10" Height="10" Fill="LightGray" StrokeThickness="1"
+ HorizontalAlignment="Left" VerticalAlignment="Top" />
+                        <Rectangle  Name="rxStatusDevice2" Width="10" Height="10" Fill="LightGray" StrokeThickness="1"
+ HorizontalAlignment="Left" VerticalAlignment="Top" />
+                    </StackPanel>
+                </StackPanel>
+            </StackPanel>
+
+
+            <Button Margin="0 0 0 0" FontSize="1"  Width="20" Height="20" HorizontalAlignment="Right" VerticalAlignment="Center" Click="CheckCommunication_Click" Grid.Column="1">
+                <fa:IconImage Icon="RotateRight" Foreground="Black" Width="15" Height="100"  />
+            </Button>
+
+
+        </Grid>
+    </Grid>
+
+</Window>

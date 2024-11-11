@@ -1,7 +1,0 @@
-termcolor
-numpy
-matplotlib
-tensorflow
-scikit-learn
-librosa
-sounddevice
