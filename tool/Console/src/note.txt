@@ -1,0 +1,110 @@
+ def extract_fft_features(y , sr, step):
+    fft_magnitude = np.abs(np.fft.fft(y, n=sr)[:sr // 2])
+    features = fft_magnitude[low_cutoff:high_cutoff]
+    features = features[::step] 
+    return features
+
+
+def preprocessing(y):    
+    return stft_filter(y)
+
+def stft_filter(y, low_cutoff=config.LOW_CUTOFF_FREQ, high_cutoff=config.HIGH_CUTOFF_FREQ, filter_type='bandpass'):
+    """
+    Applies a frequency filter to the Short-Time Fourier Transform (STFT) of an audio signal.
+
+    Parameters:
+    - y: The audio signal (1D numpy array)
+    - sr: The sampling rate of the audio
+    - low_cutoff: The low cutoff frequency for filtering (Hz)
+    - high_cutoff: The high cutoff frequency for filtering (Hz)
+    - filter_type: Type of filter ('lowpass', 'highpass', 'bandpass')
+
+    Returns:
+    - filtered_audio: The audio signal after applying the frequency filter
+    """
+    # Compute the STFT
+    D = librosa.stft(y)
+
+    # Get the frequency bins
+    freqs = librosa.fft_frequencies()
+
+    # Create a copy of STFT for filtering
+    D_filtered = D.copy()
+
+    # Apply the chosen filter
+    if filter_type == 'lowpass':
+        # Zero out frequencies above high_cutoff
+        D_filtered[freqs > high_cutoff] = 0
+    elif filter_type == 'highpass':
+        # Zero out frequencies below low_cutoff
+        D_filtered[freqs < low_cutoff] = 0
+    elif filter_type == 'bandpass':
+        # Zero out frequencies outside the range [low_cutoff, high_cutoff]
+        D_filtered[(freqs < low_cutoff) | (freqs > high_cutoff)] = 0
+    else:
+        raise ValueError("Filter type must be 'lowpass', 'highpass', or 'bandpass'")
+
+    # Inverse STFT to get the filtered signal
+    filtered_audio = librosa.istft(D_filtered,  n_fft=1024, hop_length=512)
+    return filtered_audio
+
+
+def extract_wavelet_features(y, wavelet='db4', level=None):
+    # Perform wavelet decomposition on the signal `y` with the specified wavelet and decomposition level
+    coeffs = pywt.wavedec(y, wavelet, level=level)
+    
+    features = []
+    
+    # Compute features for each scale (wavelet coefficient array)
+    for coeff in coeffs:
+        features.append(np.mean(coeff))       # Mean
+        features.append(np.std(coeff))        # Standard deviation
+        features.append(np.max(coeff))        # Maximum value
+        features.append(np.min(coeff))        # Minimum value
+        features.append(np.sum(np.square(coeff)))  # Energy (sum of squares)
+    
+    return features
+
+def extract_wavelet_energy_distribution_features(y,  wavelet='db4', level=None):
+
+    # Perform Discrete Wavelet Transform (DWT)
+    coeffs = pywt.wavedec(y, wavelet, level=level)
+    
+    # Calculate energy for each level
+    energies = [np.sum(np.square(coeff)) for coeff in coeffs]
+    
+    # Calculate total energy and normalize each level's energy
+    total_energy = np.sum(energies)
+    energy_distribution = [(energy / total_energy) * 100 for energy in energies]
+    
+    return energy_distribution
+
+
+
+def create_dense_model(input_shape, num_classes):
+    model = tf.keras.models.Sequential([ 
+        tf.keras.layers.InputLayer(input_shape=input_shape), 
+        tf.keras.layers.Dense(300, activation='relu', kernel_regularizer=regularizers.l2(0.005)), 
+        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dense(200, activation='relu', kernel_regularizer=regularizers.l2(0.005)), 
+        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dense(100, activation='relu', kernel_regularizer=regularizers.l2(0.005)), 
+        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dense(num_classes, activation='softmax')
+    ])    
+
+    
+    model.compile(
+        optimizer='adam',
+        loss='sparse_categorical_crossentropy',
+        metrics=['accuracy'])
+    
+    return model
+
+
+
+NG_FIXTURE      
+     |-----------NG
+OK_CONNECTOR
+     |-----------NG
+     |-----------OK

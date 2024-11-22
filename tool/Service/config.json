@@ -1,0 +1,42 @@
+{
+    "DATASET_DIR": "C:/Users/ADMIN/Documents/main/working/Audio.Classification/dataset",
+    "LABELS": [
+        [
+            "NG",
+            "OK",
+            "NG.PCB"
+        ],
+        [
+            "NG.PCB",
+            "OK",
+            "OK.NG.COPY"
+        ]
+    ],
+    "EPOCHS": 2000,
+    "PATIENCE": 1500,
+    "BATCH_SIZE": 16,
+    "DURATION": 500,
+    "WINDOW_SIZE": 22050,
+    "STEP_SIZE": 2205,
+    "SAMPLE_RATE": 22050,
+    "SEGMENT_DURATION": 0.15,
+    "FRAME_LENGTH": 512,
+    "HOP_LENGTH": 128,
+    "PEAK_HEIGHT": 0.3,
+    "PEAK_DISTANCE": 250,
+    "PEAK_THRESHOLD": 0.02,
+    "MAX_NUM_PEAKS": 2,
+    "LOW_THRESH_AMP": 0.3,
+    "HIGH_THRESH_AMP": 0.9,
+    "WEIGHTS" : { 
+        "NUM_AMPLITUDE_PEAKS": 1.0,
+        "ZERO_CROSSING_RATE": 1.2,
+        "ROOT_MEAN_SQUARE_ENERGY": 1.2,
+        "SPECTRAL_CENTROID": 1.5,
+        "SPECTRAL_BANDWIDTH": 1.5,
+        "AMPLITUDE_FEATURES": 1.5,
+        "SHORT_TIME_ENERGY": 1.5,
+        "FFT_MAGNITUDE": 1.5,
+        "MAX_ENERGY_DISTRIBUTION": 1.5
+    }    
+}
