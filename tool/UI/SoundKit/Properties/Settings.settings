@@ -1,0 +1,9 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="SoundKit.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="ServicePath" Type="System.String" Scope="User">
+      <Value Profile="(Default)">C:\\Users\\ADMIN\\Documents\\main\\working\\Audio.Classification\\tool\\service</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>
