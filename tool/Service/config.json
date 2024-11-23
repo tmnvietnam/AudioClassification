@@ -3,13 +3,12 @@
     "LABELS": [
         [
             "NG",
-            "OK",
-            "NG.PCB"
+            "OK"
         ],
         [
-            "NG.PCB",
             "OK",
-            "OK.NG.COPY"
+            "NG",
+            "NG.PCB"
         ]
     ],
     "EPOCHS": 2000,

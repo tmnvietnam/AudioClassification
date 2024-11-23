@@ -4,17 +4,17 @@
 winexe
 C#
 .cs
-C:\Users\ADMIN\Documents\main\working\Audio.Classification\tool\UI\merging\Testing\obj\Debug\net8.0-windows\
+C:\Users\ADMIN\Documents\main\working\Audio.Classification\tool\UI\SoundKit\obj\Debug\net8.0-windows\
 SoundKit
 none
 false
 TRACE;DEBUG;NET;NET8_0;NETCOREAPP
-C:\Users\ADMIN\Documents\main\working\Audio.Classification\tool\UI\merging\Testing\App.xaml
-3127541951
+C:\Users\ADMIN\Documents\main\working\Audio.Classification\tool\UI\SoundKit\App.xaml
+4949395344
 
-16-86517877
+18-118294827
 2221556413420
-FixtureWindow.xaml;MainWindow.xaml;TrainingWindow.xaml;
+FixtureWindow.xaml;MainWindow.xaml;RealtimeWindow.xaml;TrainingWindow.xaml;
 
-True
+False
 

@@ -328,7 +328,8 @@ def load_dataset(data_dir, labels):
     # Return the extracted features and corresponding labels
     return audio_data, audio_labels
 
-def predict(signal,model, labels):
+def predict(signal,model):
+    labels = config.LABELS[0]
     segment = extract_peak_segment(signal)                
                 
     num_amplitude_peaks = get_num_amplitude_peaks(segment)

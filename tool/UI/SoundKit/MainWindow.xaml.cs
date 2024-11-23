@@ -1,5 +1,7 @@
 ﻿using NAudio.Wave;
+using Python.Runtime;
 using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -33,15 +35,53 @@ namespace SoundKit
         private List<MediaPlayer> mediaPlayers = new();
         private List<Tuple<int, int>> audioForTrain = new();
 
+        public string ServicePath = Properties.Settings.Default.ServicePath;
+        public string TempPath = Path.Combine(Properties.Settings.Default.ServicePath, "temp");
+
+        public string VirtualEnvPath = Properties.Settings.Default.VirtualEnvPath;
+
+        FixtureWindow Fixture1Window;
+        FixtureWindow Fixture2Window;
+        FixtureWindow Fixture3Window;
+
+
 
         public MainWindow()
         {
+
             InitializeComponent();
 
             viewModel = new MainViewModel();
             this.DataContext = viewModel;
 
+            InitPython();
+
             LoadMicrophones();
+
+            this.Closed += Window_Closed;
+
+        }
+        private void Window_Closed(object sender, EventArgs e)
+        {
+            PythonEngine.EndAllowThreads(0);
+            PythonEngine.Shutdown();
+        }
+
+        void InitPython()
+        {
+
+            var path = Environment.GetEnvironmentVariable("PATH").TrimEnd(';');
+            path = string.IsNullOrEmpty(path) ? VirtualEnvPath : path + ";" + VirtualEnvPath;
+            Environment.SetEnvironmentVariable("PATH", path, EnvironmentVariableTarget.Process);
+            Environment.SetEnvironmentVariable("PATH", VirtualEnvPath, EnvironmentVariableTarget.Process);
+            Environment.SetEnvironmentVariable("PYTHONHOME", VirtualEnvPath, EnvironmentVariableTarget.Process);
+            Environment.SetEnvironmentVariable("PYTHONPATH", $@"{VirtualEnvPath}\\Lib\\site-packages;{VirtualEnvPath}\\Lib;{ServicePath}", EnvironmentVariableTarget.Process);
+
+            PythonEngine.PythonHome = VirtualEnvPath;
+            PythonEngine.PythonPath = PythonEngine.PythonPath + ";" + Environment.GetEnvironmentVariable("PYTHONPATH", EnvironmentVariableTarget.Process);
+            PythonEngine.Initialize();
+            PythonEngine.BeginAllowThreads();
+
         }
 
 
@@ -79,31 +119,27 @@ namespace SoundKit
         private void OpenFixture1Btn_Click(object sender, RoutedEventArgs e)
         {
             int selectedMicrophoneIndex = MicrophoneComboBox1.SelectedIndex;
-
-            Trace.WriteLine(selectedMicrophoneIndex);
-
-            FixtureWindow Fixture1Window = new("Fixture 1", selectedMicrophoneIndex, "TensorflowService1");
-            Fixture1Window.Show();
+            Fixture1Window = new("Fixture 1", selectedMicrophoneIndex);    
+            Fixture1Window.Show();          
         }
 
         private void OpenFixture2Btn_Click(object sender, RoutedEventArgs e)
         {
             int selectedMicrophoneIndex = MicrophoneComboBox2.SelectedIndex;
-
-            Trace.WriteLine(selectedMicrophoneIndex);
-
-            FixtureWindow Fixture1Window = new("Fixture 2", selectedMicrophoneIndex, "TensorflowService2");
-            Fixture1Window.Show();
+            Fixture2Window = new("Fixture 2", selectedMicrophoneIndex);    
+            Fixture2Window.Show();
         }
 
         private void OpenFixture3Btn_Click(object sender, RoutedEventArgs e)
         {
             int selectedMicrophoneIndex = MicrophoneComboBox3.SelectedIndex;
-
-            FixtureWindow Fixture3Window = new("Fixture 3", selectedMicrophoneIndex, "TensorflowService3");
+            Fixture3Window = new("Fixture 3", selectedMicrophoneIndex);
             Fixture3Window.Show();
         }
 
+        private void LoadPythonCorePathButton_Click(object sender, RoutedEventArgs e)
+        {
 
+        }
     }
 }

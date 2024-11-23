@@ -55,8 +55,6 @@ namespace SoundKit
         private int batchSize = 0;
         private int patience = 0;
 
-        static string[] labels = new string[] { "NG", "OK", "NG.PCB" };
-
         private dynamic aiCore;
 
 
@@ -65,35 +63,21 @@ namespace SoundKit
         public TrainingWindow(int idMicrophone, string datasetDir)
         {
             InitializeComponent();
-            InitPython();
-            LoadMicrophones(idMicrophone);
 
             this.datasetDir = datasetDir;
-            this.Closed += Window_Closed;
+            this.Closed += WindowClosed;
 
             viewModel = new();
             viewModel.AudioRecorder = new AudioRecorder(idMicrophone);
             viewModel.AudioRecorder.ProgressChanged += UpdateProgressBar;
 
             DataContext = viewModel;
+            InitPython();
+
         }
 
         void InitPython()
         {
-            //string pathToVirtualEnv = @"C:\Users\ADMIN\AppData\Local\Programs\Python\Python39";
-
-            //var path = Environment.GetEnvironmentVariable("PATH").TrimEnd(';');
-            //path = string.IsNullOrEmpty(path) ? pathToVirtualEnv : path + ";" + pathToVirtualEnv;
-            //Environment.SetEnvironmentVariable("PATH", path, EnvironmentVariableTarget.Process);
-            //Environment.SetEnvironmentVariable("PATH", pathToVirtualEnv, EnvironmentVariableTarget.Process);
-            //Environment.SetEnvironmentVariable("PYTHONHOME", pathToVirtualEnv, EnvironmentVariableTarget.Process);
-            //Environment.SetEnvironmentVariable("PYTHONPATH", $@"{pathToVirtualEnv}\\Lib\\site-packages;{pathToVirtualEnv}\\Lib;{ServicePath}", EnvironmentVariableTarget.Process);
-
-            //PythonEngine.PythonHome = pathToVirtualEnv;
-            //PythonEngine.PythonPath = PythonEngine.PythonPath + ";" + Environment.GetEnvironmentVariable("PYTHONPATH", EnvironmentVariableTarget.Process);
-            //PythonEngine.Initialize();
-            //PythonEngine.BeginAllowThreads();
-
 
             using (Py.GIL())
             {
@@ -157,61 +141,14 @@ namespace SoundKit
                 string fileName = GetNextFileName(folderPath);
                 string filePath = Path.Combine(folderPath, fileName);
                 viewModel.AudioRecorder.ExtractAndSaveAudioSegment(filePath, startSample, endSample);
-            }
-           
+            }          
 
-            //string folderPath = string.Empty;
-            //string label = string.Empty;
-            //// Cast sender to a Button to access properties
-            //Button clickedButton = sender as Button;
-
-            //if (clickedButton != null)
-            //{
-            //    label = (clickedButton.Content as StackPanel)?.Children.OfType<TextBlock>().FirstOrDefault()?.Text;
-            //    folderPath = Path.Combine(datasetDir, label);
-
-            //}
-
-            //if (!File.Exists(folderPath))
-            //{
-            //    Directory.CreateDirectory(folderPath);
-            //}
-
-            //if (Path.Exists(folderPath))
-            //{
-            //    string fileName = GetNextFileName(folderPath);
-            //    string filePath = Path.Combine(folderPath, fileName);
-
-            //    viewModel.AudioRecorder.ExtractAndSaveAudioSegment(filePath, startSample, endSample);
-
-            //    switch (label)
-            //    {
-            //        case "NG":
-            //            NumberDataSetNG.Content = $"{CountFilesInDirectory(folderPath)}";
-            //            break;
-            //        case "OK":
-            //            NumberDataSetOK.Content = $"{CountFilesInDirectory(folderPath)}";
-            //            break;
-            //        case "NG.PCB":
-            //            NumberDataSetNG_PCB.Content = $"{CountFilesInDirectory(folderPath)}";
-            //            break;
-            //        case "NG.BG":
-            //            NumberDataSetNG_BG.Content = $"{CountFilesInDirectory(folderPath)}";
-            //            break;
-            //    }
-            //}
-            //else
-            //{
-            //    MessageBox.Show("Dataset folder not found.");
-            //}
+          
         }
 
 
-        private void Window_Closed(object sender, EventArgs e)
+        private void WindowClosed(object sender, EventArgs e)
         {
-            PythonEngine.Shutdown();
-            PythonEngine.EndAllowThreads(0);
-
             viewModel.AudioRecorder.Dispose();
 
         }
@@ -256,34 +193,6 @@ namespace SoundKit
                 rectangle.ReleaseMouseCapture();  // Release mouse capture when done
             }
         }
-
-        //private void DatasetBrowseButton_Click(object sender, RoutedEventArgs e)
-        //{
-        //    using (var folderDialog = new FolderBrowserDialog())
-        //    {
-        //        folderDialog.SelectedPath = @"C:\";
-
-        //        if (folderDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-        //        {
-        //            string selectedPath = folderDialog.SelectedPath;
-
-        //            DatasetTextBox.Text = selectedPath;
-        //            datasetDir = DatasetTextBox.Text;
-
-        //            EnsureDirectoryExists(Path.Combine(datasetDir, $"OK"));
-        //            EnsureDirectoryExists(Path.Combine(datasetDir, $"NG"));
-        //            EnsureDirectoryExists(Path.Combine(datasetDir, $"NG.PCB"));
-        //            EnsureDirectoryExists(Path.Combine(datasetDir, $"NG.BG"));
-
-        //            NumberDataSetOK.Content = $"{CountFilesInDirectory(Path.Combine(datasetDir, $"OK"))}";
-        //            NumberDataSetNG.Content = $"{CountFilesInDirectory(Path.Combine(datasetDir, $"NG"))}";
-
-        //            NumberDataSetNG_BG.Content = $"{CountFilesInDirectory(Path.Combine(datasetDir, $"NG.BG"))}";
-        //            NumberDataSetNG_PCB.Content = $"{CountFilesInDirectory(Path.Combine(datasetDir, $"NG.PCB"))}";
-        //        }
-        //    }
-        //}
-        // Function to check and create a directory if it doesn't exist
         public void EnsureDirectoryExists(string folderPath)
         {
             if (!Directory.Exists(folderPath))
@@ -353,7 +262,7 @@ namespace SoundKit
                     // Call the Python train function
                     dynamic res = aiCore.train(datasetPath, epochs, batchSize, patience);
 
-                    Dispatcher.Invoke(() => TrainingResult.Text = $"Accuracy: {res[0] * 100:F2}%   Loss: {res[1] * 100:F2}%");
+                    Dispatcher.Invoke(() => TrainingResult.Text = $"Accuracy: {(res[0] * 100):F2}%   Loss: {(res[1] * 100):F2}%");
 
                 }
                 catch (PythonException ex)
@@ -396,47 +305,6 @@ namespace SoundKit
 
         }
 
-
-        private void LoadMicrophones(int idMicrophone)
-        {
-            if (viewModel != null)
-            {
-              
-            }
-
-
-            //// Create a list to store available microphones
-            //var microphones = new List<WaveInCapabilities>();
-
-            //// Get and list all available input devices (microphones)
-            //for (int deviceIndex = 0; deviceIndex < WaveIn.DeviceCount; deviceIndex++)
-            //{
-            //    var deviceInfo = WaveIn.GetCapabilities(deviceIndex);
-            //    microphones.Add(deviceInfo);
-
-            //}
-
-            //// Bind the list to the ComboBox
-            //MicrophoneComboBox.ItemsSource = microphones;
-
-
-            //// Set the first item (default microphone) as selected if there are any devices
-            //if (microphones.Count > 0)
-            //{
-            //    MicrophoneComboBox.SelectedIndex = 0; // Automatically select the first device (default microphone)        
-            //}
-
-        }
-
-        //private void ApplyClick(object sender, RoutedEventArgs e)
-        //{
-        //    int selectedMicrophoneIndex = MicrophoneComboBox.SelectedIndex;
-
-        //    if (viewModel != null)
-        //    {
-        //        viewModel.AudioRecorder = new AudioRecorder(selectedMicrophoneIndex);
-        //        viewModel.AudioRecorder.ProgressChanged += UpdateProgressBar;
-        //    }
-        //}
+       
     }
 }

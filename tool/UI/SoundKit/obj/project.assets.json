@@ -953,11 +953,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\ADMIN\\Documents\\main\\working\\Audio.Classification\\tool\\UI\\merging\\Testing\\SoundKit.csproj",
+      "projectUniqueName": "C:\\Users\\ADMIN\\Documents\\main\\working\\Audio.Classification\\tool\\UI\\SoundKit\\SoundKit.csproj",
       "projectName": "SoundKit",
-      "projectPath": "C:\\Users\\ADMIN\\Documents\\main\\working\\Audio.Classification\\tool\\UI\\merging\\Testing\\SoundKit.csproj",
+      "projectPath": "C:\\Users\\ADMIN\\Documents\\main\\working\\Audio.Classification\\tool\\UI\\SoundKit\\SoundKit.csproj",
       "packagesPath": "C:\\Users\\ADMIN\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\ADMIN\\Documents\\main\\working\\Audio.Classification\\tool\\UI\\merging\\Testing\\obj\\",
+      "outputPath": "C:\\Users\\ADMIN\\Documents\\main\\working\\Audio.Classification\\tool\\UI\\SoundKit\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\ADMIN\\AppData\\Roaming\\NuGet\\NuGet.Config",

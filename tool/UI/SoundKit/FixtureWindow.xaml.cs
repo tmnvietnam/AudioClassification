@@ -63,11 +63,11 @@ namespace SoundKit
 
         public int Duration = 100;      // Duration in seconds, similar to config.DURATION
         static readonly int SampleRate = 22050; // Sample rate, similar to config.SAMPLE_RATE
+
         //static readonly int Duration = 24*3600*7;      // Duration in seconds, similar to config.DURATION
         static readonly int WindowSize = SampleRate;
-        static readonly int StepSize = SampleRate/10;
+        static readonly int StepSize = SampleRate / 10;
 
-        static string[] labels = new string[] { "NG",  "OK" , "NG.Fixture" };
 
         private int idMicrophone = 0;
 
@@ -78,18 +78,17 @@ namespace SoundKit
         private dynamic np;
         private dynamic aiCore;
 
+        TrainingWindow TrainingWindow;
+        RealtimeWindow RealtimeWindow;
+
 
         public List<short> AudioData = new List<short>();
-
 
         private Queue<short[]> audioQueue = new();  // Queue of audio samples
         private static bool stopFlag = false;
 
 
         private bool _ReadyTest = false;
-
-
-
 
         public bool ReadyTest
         {
@@ -103,7 +102,6 @@ namespace SoundKit
 
             }
         }
-
 
         private bool _BarcodeReady = false;
 
@@ -119,7 +117,6 @@ namespace SoundKit
 
             }
         }
-
 
         private void ScannerSerialReceiverHandler(object sender, EventArgs e)
         {
@@ -210,29 +207,15 @@ namespace SoundKit
         {
             Dispatcher.Invoke(() =>
             {
-                if (ReadyTest == false)
-                {
-                    if (TestingTab.IsSelected)
-                    {
-                        //ReadyTest = true;
-                    }
-                    else
-                    {
-                        //ReadyTest = false;
-                    }
-                }
+                //ReadyTest = true;
             });
         }
-
-
         private void LoadComPorts()
         {
             string[] ports = SerialPort.GetPortNames();
 
-
             comPortComboBox1.ItemsSource = ports;
             comPortComboBox2.ItemsSource = ports;
-
 
             // Set the first available port as the default selected item, if available
             if (ports.Length > 0)
@@ -253,29 +236,12 @@ namespace SoundKit
 
             SystemIO.OnStartRequest += StartRequestHandler;
 
-
-
             SerialConnections.Add(Scanner);
             SerialConnections.Add(SystemIO);
         }
 
         void InitPython()
         {
-            string pathToVirtualEnv = @"C:\Users\ADMIN\AppData\Local\Programs\Python\Python39";
-
-            var path = Environment.GetEnvironmentVariable("PATH").TrimEnd(';');
-            path = string.IsNullOrEmpty(path) ? pathToVirtualEnv : path + ";" + pathToVirtualEnv;
-            Environment.SetEnvironmentVariable("PATH", path, EnvironmentVariableTarget.Process);
-            Environment.SetEnvironmentVariable("PATH", pathToVirtualEnv, EnvironmentVariableTarget.Process);
-            Environment.SetEnvironmentVariable("PYTHONHOME", pathToVirtualEnv, EnvironmentVariableTarget.Process);
-            Environment.SetEnvironmentVariable("PYTHONPATH", $@"{pathToVirtualEnv}\\Lib\\site-packages;{pathToVirtualEnv}\\Lib;{ServicePath}", EnvironmentVariableTarget.Process);
-
-            PythonEngine.PythonHome = pathToVirtualEnv;
-            PythonEngine.PythonPath = PythonEngine.PythonPath + ";" + Environment.GetEnvironmentVariable("PYTHONPATH", EnvironmentVariableTarget.Process);
-            PythonEngine.Initialize();
-            PythonEngine.BeginAllowThreads();
-
-
             using (Py.GIL())
             {
                 np = Py.Import("numpy");
@@ -284,15 +250,15 @@ namespace SoundKit
             }
         }
 
-        public FixtureWindow(string titleWindow, int idMicrophone, string nameService)
+        public FixtureWindow(string titleWindow, int idMicrophone)
         {
             InitializeComponent();
             this.Title = titleWindow;
 
-            this.Closed += Window_Closed;
+            this.Closed += WindowClosed;
 
             this.idMicrophone = idMicrophone;
-            viewModel = new FixtureViewModel(idMicrophone);
+            viewModel = new FixtureViewModel();
 
             DataContext = viewModel;
 
@@ -300,16 +266,7 @@ namespace SoundKit
 
             InitCheckCommunication();
 
-            InitPython();
-
-            // Set up a timer to update the plot periodically
-            timer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromMilliseconds(50)
-            };
-            timer.Tick += viewModel.UpdatePlotRealtime;
-            timer.Start();
-
+            InitPython();    
         }
 
 
@@ -351,8 +308,6 @@ namespace SoundKit
             }
         }
 
-
-
         // Function to check and create a directory if it doesn't exist
         public void EnsureDirectoryExists(string folderPath)
         {
@@ -374,10 +329,8 @@ namespace SoundKit
             }
         }
 
-        private void Window_Closed(object sender, EventArgs e)
+        private void WindowClosed(object sender, EventArgs e)
         {
-            PythonEngine.Shutdown();
-            PythonEngine.EndAllowThreads(0);
 
             SerialConnections.ForEach(connection =>
             {
@@ -385,7 +338,6 @@ namespace SoundKit
                 connection.SerialPort.Dispose();
 
             });
-
         }
 
         private void ResetMediaPlayer()
@@ -518,7 +470,7 @@ namespace SoundKit
             audioForTrain.Add(new Tuple<int, int>(indexMediaPlayer, 0));
         }
 
-        private void chkEnable_Unchecked_NG(object sender, RoutedEventArgs e , int indexMediaPlayer)
+        private void chkEnable_Unchecked_NG(object sender, RoutedEventArgs e, int indexMediaPlayer)
         {
             // Find the tuple with the matching indexMediaPlayer value
             var tupleToRemove = audioForTrain.FirstOrDefault(t => t.Item1 == indexMediaPlayer);
@@ -639,7 +591,6 @@ namespace SoundKit
             await Task.Run(() => StartTestHandlerAsync());
 
         }
-
         private async void StopTest(object sender, RoutedEventArgs e)
         {
             ReadyTest = false;
@@ -682,19 +633,15 @@ namespace SoundKit
             }
         }
 
-
-
-
         private void AddMediaPlayer(List<short> audioData, int indexMediaPlayer, OxyColor color)
-        {         
+        {
 
             WrapPanel wrapPanel = new WrapPanel
             {
                 HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
                 VerticalAlignment = System.Windows.VerticalAlignment.Center
 
-            };           
-
+            };
 
             System.Windows.Controls.CheckBox chkEnable_NG = new System.Windows.Controls.CheckBox
             {
@@ -705,7 +652,7 @@ namespace SoundKit
             };
 
             chkEnable_NG.Checked += (sender, e) => chkEnable_Checked_NG(sender, e, indexMediaPlayer);
-            chkEnable_NG.Unchecked += (sender, e) => chkEnable_Unchecked_NG(sender, e , indexMediaPlayer);
+            chkEnable_NG.Unchecked += (sender, e) => chkEnable_Unchecked_NG(sender, e, indexMediaPlayer);
 
             Grid gridEnable_NG = new Grid
             {
@@ -723,8 +670,8 @@ namespace SoundKit
 
             };
 
-            chkEnable_OK.Checked += (sender, e) => chkEnable_Checked_OK(sender, e,  indexMediaPlayer);
-            chkEnable_OK.Unchecked += (sender, e) => chkEnable_Unchecked_OK(sender, e,  indexMediaPlayer);
+            chkEnable_OK.Checked += (sender, e) => chkEnable_Checked_OK(sender, e, indexMediaPlayer);
+            chkEnable_OK.Unchecked += (sender, e) => chkEnable_Unchecked_OK(sender, e, indexMediaPlayer);
 
             Grid gridEnable_OK = new Grid
             {
@@ -753,14 +700,7 @@ namespace SoundKit
 
             MediaPlayerStack.Children.Add(wrapPanel);
 
-            //DispatcherTimer timer = new DispatcherTimer();
-            //timer.Interval = TimeSpan.FromSeconds(1);
-            //timer.Tick += (sender, e) => timer_Tick(sender, e, mediaPlayer, lblStatus);
-            //timer.Start();
-
             FixtureViewModel.UpdatePlot(plotModel, audioData.ToArray());
-
-
         }
 
         //static List<float> ConvertByteArrayToFloatList(List<float> byteArray)
@@ -901,7 +841,7 @@ namespace SoundKit
 
                                 dynamic segment = np.array(floatList);
 
-                                dynamic resultPredict = aiCore.predict(segment, model, labels);
+                                dynamic resultPredict = aiCore.predict(segment, model);
 
                                 if ((String)resultPredict == "OK")
                                 {
@@ -919,7 +859,7 @@ namespace SoundKit
                                 {
                                     Dispatcher.Invoke(() =>
                                     {
-                                        AddMediaPlayer(currentWindow, index_window,OxyColors.Red); // Update UI
+                                        AddMediaPlayer(currentWindow, index_window, OxyColors.Red); // Update UI
                                         MediaPlayerScrollViewer.ScrollToEnd();       // Ensure visibility
                                     });
 
@@ -936,7 +876,7 @@ namespace SoundKit
                                 ////////////////////////////////////////////////\
                                 //if using pipe
 
-                              
+
 
                                 //string resultPredict = Predict(index_window);
 
@@ -969,7 +909,7 @@ namespace SoundKit
                                 index_window++;
 
                                 // Slide the window forward by step_size
-                                buffer = buffer.GetRange(StepSize, buffer.Count - StepSize); 
+                                buffer = buffer.GetRange(StepSize, buffer.Count - StepSize);
 
 
                             }
@@ -1032,7 +972,7 @@ namespace SoundKit
                 waveIn.DataAvailable += OnDataAvailable;
 
 
-             
+
                 waveIn.StartRecording();
                 Debug.WriteLine("Recording started...");
 
@@ -1067,11 +1007,7 @@ namespace SoundKit
             return resultCheck;
         }
 
-        private async void AutoScaleButton_Click(object sender, RoutedEventArgs e)
-        {
-            await viewModel.AutoScaleButtonAsync();
-        }
-
+  
         private void LoadModelButton_Click(object sender, RoutedEventArgs e)
         {
 
@@ -1178,10 +1114,16 @@ namespace SoundKit
             }
         }
 
-        private void OpenTrainingView_Click(object sender, RoutedEventArgs e)
+        private void OpenTrainingWindow_Click(object sender, RoutedEventArgs e)
         {
-            TrainingWindow TrainingWindow = new TrainingWindow(idMicrophone, datasetDir);
+            TrainingWindow = new(idMicrophone, datasetDir);
             TrainingWindow.Show();
+        }
+
+        private void OpenRealtimeWindow_Click(object sender, RoutedEventArgs e)
+        {
+            RealtimeWindow = new(idMicrophone);
+            RealtimeWindow.Show();
         }
     }
 }

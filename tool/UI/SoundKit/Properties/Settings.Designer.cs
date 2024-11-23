@@ -25,13 +25,25 @@ namespace SoundKit.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("C:\\\\Users\\\\ADMIN\\\\Documents\\\\main\\\\working\\\\Audio.Classification\\\\tool\\\\service")]
+        [global::System.Configuration.DefaultSettingValueAttribute("C:\\Users\\ADMIN\\Documents\\main\\working\\Audio.Classification\\Tool\\Service")]
         public string ServicePath {
             get {
                 return ((string)(this["ServicePath"]));
             }
             set {
                 this["ServicePath"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("C:\\Users\\ADMIN\\AppData\\Local\\Programs\\Python\\Python39")]
+        public string VirtualEnvPath {
+            get {
+                return ((string)(this["VirtualEnvPath"]));
+            }
+            set {
+                this["VirtualEnvPath"] = value;
             }
         }
     }

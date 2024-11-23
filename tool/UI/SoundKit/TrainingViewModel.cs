@@ -2,20 +2,6 @@
 using OxyPlot.Series;
 using OxyPlot;
 using SoundKit.Audio;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.IO;
-using OxyPlot;
-using OxyPlot.Series;
-using OxyPlot.Axes;
-using NAudio.Wave;
-using MathNet.Numerics;
-using MathNet.Numerics.IntegralTransforms;
-using SoundKit.Audio;
-
 
 namespace SoundKit
 {

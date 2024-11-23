@@ -3,7 +3,10 @@
   <Profiles />
   <Settings>
     <Setting Name="ServicePath" Type="System.String" Scope="User">
-      <Value Profile="(Default)">C:\\Users\\ADMIN\\Documents\\main\\working\\Audio.Classification\\tool\\service</Value>
+      <Value Profile="(Default)">C:\Users\ADMIN\Documents\main\working\Audio.Classification\Tool\Service</Value>
+    </Setting>
+    <Setting Name="VirtualEnvPath" Type="System.String" Scope="User">
+      <Value Profile="(Default)">C:\Users\ADMIN\AppData\Local\Programs\Python\Python39</Value>
     </Setting>
   </Settings>
 </SettingsFile>

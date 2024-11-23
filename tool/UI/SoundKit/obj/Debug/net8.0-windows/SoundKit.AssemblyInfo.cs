@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SoundKit")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+385da4c803b37d3adcd8525cdf7acc57f21bffe0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0953b843e63b83e5117a28fa17a9938561870caa")]
 [assembly: System.Reflection.AssemblyProductAttribute("SoundKit")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SoundKit")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

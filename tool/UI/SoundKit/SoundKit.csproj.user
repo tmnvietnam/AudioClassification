@@ -15,6 +15,9 @@
     <Page Update="MainWindow.xaml">
       <SubType>Designer</SubType>
     </Page>
+    <Page Update="RealtimeWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
     <Page Update="TrainingWindow.xaml">
       <SubType>Designer</SubType>
     </Page>

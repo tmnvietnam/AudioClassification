@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "UNJYKBv9BTI=",
+  "dgSpecHash": "bKLhEQROiqE=",
   "success": true,
-  "projectFilePath": "C:\\Users\\ADMIN\\Documents\\main\\working\\Audio.Classification\\tool\\UI\\merging\\Testing\\SoundKit.csproj",
+  "projectFilePath": "C:\\Users\\ADMIN\\Documents\\main\\working\\Audio.Classification\\tool\\UI\\SoundKit\\SoundKit.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\ADMIN\\.nuget\\packages\\fontawesome.sharp\\6.6.0\\fontawesome.sharp.6.6.0.nupkg.sha512",
     "C:\\Users\\ADMIN\\.nuget\\packages\\fontawesome.sharp.pro\\6.6.0\\fontawesome.sharp.pro.6.6.0.nupkg.sha512",
