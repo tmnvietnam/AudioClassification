@@ -60,6 +60,17 @@ namespace SoundKit
 
             this.Closed += Window_Closed;
 
+            // Redirect Console output to the TextBox
+            var writer = new TextBoxStreamWriter(MyTextBox);
+            Console.SetOut(writer);
+
+            // Set fixed position
+            this.Top = 0; // Y-coordinate
+            this.Left = 0; // X-coordinate
+
+         
+
+
         }
         private void Window_Closed(object sender, EventArgs e)
         {
@@ -119,27 +130,23 @@ namespace SoundKit
         private void OpenFixture1Btn_Click(object sender, RoutedEventArgs e)
         {
             int selectedMicrophoneIndex = MicrophoneComboBox1.SelectedIndex;
-            Fixture1Window = new("Fixture 1", selectedMicrophoneIndex);    
-            Fixture1Window.Show();          
+            Fixture1Window = new("Fixture 1", selectedMicrophoneIndex, 0);    
+            Fixture1Window.Show();
+
         }
 
         private void OpenFixture2Btn_Click(object sender, RoutedEventArgs e)
         {
             int selectedMicrophoneIndex = MicrophoneComboBox2.SelectedIndex;
-            Fixture2Window = new("Fixture 2", selectedMicrophoneIndex);    
+            Fixture2Window = new("Fixture 2", selectedMicrophoneIndex, 1);    
             Fixture2Window.Show();
         }
 
         private void OpenFixture3Btn_Click(object sender, RoutedEventArgs e)
         {
             int selectedMicrophoneIndex = MicrophoneComboBox3.SelectedIndex;
-            Fixture3Window = new("Fixture 3", selectedMicrophoneIndex);
+            Fixture3Window = new("Fixture 3", selectedMicrophoneIndex, 2);
             Fixture3Window.Show();
-        }
-
-        private void LoadPythonCorePathButton_Click(object sender, RoutedEventArgs e)
-        {
-
         }
     }
 }

@@ -29,7 +29,6 @@ namespace SoundKit
     /// </summary>
     public partial class TrainingWindow : Window
     {
-
         public string ServicePath = Properties.Settings.Default.ServicePath;
 
         private Point startPoint;
@@ -46,7 +45,7 @@ namespace SoundKit
         private double minX = 85;
         private double maxX = 1363;
 
-        private string datasetDir = string.Empty;
+        public string DatasetDir = string.Empty;
         private string ngFolderPath = string.Empty;
         private string okFolderPath = string.Empty;
         private string modelFilePath = string.Empty;
@@ -57,14 +56,18 @@ namespace SoundKit
 
         private dynamic aiCore;
 
-
         private string pipeName = string.Empty;
 
-        public TrainingWindow(int idMicrophone, string datasetDir)
+        private string fixtureName = string.Empty;
+
+        public TrainingWindow(string fixtureName, int idMicrophone, string datasetDir)
         {
             InitializeComponent();
 
-            this.datasetDir = datasetDir;
+            this.fixtureName = fixtureName;
+            this.Title = $"{fixtureName} - Training";
+
+            this.DatasetDir = datasetDir;
             this.Closed += WindowClosed;
 
             viewModel = new();
@@ -74,11 +77,38 @@ namespace SoundKit
             DataContext = viewModel;
             InitPython();
 
+            RefreshUIDataset();
+
+        }
+
+
+        public void ConsoleWriteLine(string content)
+        {
+            // Get the current datetime
+            DateTime currentTime = DateTime.Now;
+
+            // Format the datetime for the log
+            string formattedTime = currentTime.ToString("yyyy-MM-dd HH:mm:ss");
+
+            Console.WriteLine($"[{formattedTime}] {Title}: {content}");
+        }
+
+        public void RefreshUIDataset()
+        {
+            EnsureDirectoryExists(Path.Combine(DatasetDir, $"OK"));
+            EnsureDirectoryExists(Path.Combine(DatasetDir, $"NG"));
+            EnsureDirectoryExists(Path.Combine(DatasetDir, $"NG.PCB"));
+            EnsureDirectoryExists(Path.Combine(DatasetDir, $"NG.BG"));
+
+            NumberDataSetOK.Content = $"{CountFilesInDirectory(Path.Combine(DatasetDir, $"OK"))}";
+            NumberDataSetNG.Content = $"{CountFilesInDirectory(Path.Combine(DatasetDir, $"NG"))}";
+
+            NumberDataSetNG_BG.Content = $"{CountFilesInDirectory(Path.Combine(DatasetDir, $"NG.BG"))}";
+            NumberDataSetNG_PCB.Content = $"{CountFilesInDirectory(Path.Combine(DatasetDir, $"NG.PCB"))}";
         }
 
         void InitPython()
         {
-
             using (Py.GIL())
             {
                 aiCore = Py.Import("aicore");
@@ -116,18 +146,7 @@ namespace SoundKit
         }
 
         private void SaveRecording_Click(object sender, RoutedEventArgs e)
-        {
-            EnsureDirectoryExists(Path.Combine(datasetDir, $"OK"));
-            EnsureDirectoryExists(Path.Combine(datasetDir, $"NG"));
-            EnsureDirectoryExists(Path.Combine(datasetDir, $"NG.PCB"));
-            EnsureDirectoryExists(Path.Combine(datasetDir, $"NG.BG"));
-
-            NumberDataSetOK.Content = $"{CountFilesInDirectory(Path.Combine(datasetDir, $"OK"))}";
-            NumberDataSetNG.Content = $"{CountFilesInDirectory(Path.Combine(datasetDir, $"NG"))}";
-
-            NumberDataSetNG_BG.Content = $"{CountFilesInDirectory(Path.Combine(datasetDir, $"NG.BG"))}";
-            NumberDataSetNG_PCB.Content = $"{CountFilesInDirectory(Path.Combine(datasetDir, $"NG.PCB"))}";
-
+        {           
             string folderPath = string.Empty;
             string label = string.Empty;
             // Cast sender to a Button to access properties
@@ -136,21 +155,19 @@ namespace SoundKit
             if (clickedButton != null)
             {
                 label = (clickedButton.Content as StackPanel)?.Children.OfType<TextBlock>().FirstOrDefault()?.Text;
-                folderPath = Path.Combine(datasetDir, label);
+                folderPath = Path.Combine(DatasetDir, label);
 
                 string fileName = GetNextFileName(folderPath);
                 string filePath = Path.Combine(folderPath, fileName);
                 viewModel.AudioRecorder.ExtractAndSaveAudioSegment(filePath, startSample, endSample);
-            }          
+            }
+            RefreshUIDataset();
 
-          
         }
-
 
         private void WindowClosed(object sender, EventArgs e)
         {
             viewModel.AudioRecorder.Dispose();
-
         }
 
         private void Rectangle_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -200,16 +217,16 @@ namespace SoundKit
                 try
                 {
                     Directory.CreateDirectory(folderPath);
-                    Console.WriteLine($"Created directory: {folderPath}");
+                    ConsoleWriteLine($"Created directory: {folderPath}");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Error creating directory {folderPath}: {ex.Message}");
+                    ConsoleWriteLine($"Error creating directory {folderPath}: {ex.Message}");
                 }
             }
             else
             {
-                Console.WriteLine($"Directory already exists: {folderPath}");
+                ConsoleWriteLine($"Directory already exists: {folderPath}");
             }
         }
 
@@ -226,7 +243,7 @@ namespace SoundKit
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"An error occurred: {ex.Message}");
+                ConsoleWriteLine($"An error occurred: {ex.Message}");
             }
 
             return fileCount;
@@ -267,11 +284,11 @@ namespace SoundKit
                 }
                 catch (PythonException ex)
                 {
-                    Debug.WriteLine($"Python error: {ex.Message}");
+                    ConsoleWriteLine($"Python error: {ex.Message}");
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"C# error: {ex.Message}");
+                    ConsoleWriteLine($"C# error: {ex.Message}");
 
                 }
             }
@@ -279,9 +296,9 @@ namespace SoundKit
 
         private void TrainButton_Click(object sender, RoutedEventArgs e)
         {
-            datasetDir = datasetDir.Replace("\\", "/");
+            DatasetDir = DatasetDir.Replace("\\", "/");
 
-            if (Path.Exists(datasetDir))
+            if (Path.Exists(DatasetDir))
             {
                 try
                 {
@@ -289,12 +306,12 @@ namespace SoundKit
                     batchSize = int.Parse(BatchTxt.Text);
                     patience = (int)(epochs * 0.75);
 
-                    Task.Run(() => RunTraining(datasetDir, epochs, batchSize, patience));
+                    Task.Run(() => RunTraining(DatasetDir, epochs, batchSize, patience));
 
                 }
                 catch (PythonException ex)
                 {
-                    Debug.WriteLine($"Python error: {ex.Message}");
+                    ConsoleWriteLine($"Python error: {ex.Message}");
                 }
 
             }

@@ -12,11 +12,12 @@ namespace SoundKit
         private DispatcherTimer timer;
 
         private readonly RealtimeViewModel viewModel;
-        public RealtimeWindow(int idMicrophone)
+        public RealtimeWindow(string fixtureName, int idMicrophone)
         {
             InitializeComponent();
             viewModel = new RealtimeViewModel(idMicrophone);
 
+            this.Title = $"{fixtureName} - Realtime";
             DataContext = viewModel;
 
             // Set up a timer to update the plot periodically

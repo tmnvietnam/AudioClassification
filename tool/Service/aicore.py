@@ -328,6 +328,31 @@ def load_dataset(data_dir, labels):
     # Return the extracted features and corresponding labels
     return audio_data, audio_labels
 
+def _predict_(signal, model, labels ):
+    predicted_label = 'NG'
+    try:  
+            
+        features = extract_features(signal)        
+
+        features = features / np.max(features, axis=0)    
+
+        # Reshape the features to match the input shape of the model
+        input_data = features.reshape(1, -1)    
+        
+        # Predict using the trained model
+        predictions = model.predict(input_data, verbose=0)
+        
+        # Return the predicted class
+        predicted_label_index = np.argmax(predictions, axis=1)[0]
+        
+        # Get the label name from the index
+        predicted_label = labels[predicted_label_index]
+        
+    except :
+        pass
+    
+    return predicted_label
+
 def predict(signal,model):
     labels = config.LABELS[0]
     segment = extract_peak_segment(signal)                
@@ -335,7 +360,7 @@ def predict(signal,model):
     num_amplitude_peaks = get_num_amplitude_peaks(segment)
     max_amplitude = np.max(np.abs(segment))
     if (use_machine_learning(segment)):          
-            predicted_label = predict(segment, model, labels)
+            predicted_label = _predict_(segment, model, labels)
             if predicted_label.startswith('OK'):
                 return "OK"
             if predicted_label.startswith('NG'):

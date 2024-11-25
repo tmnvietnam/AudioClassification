@@ -6,36 +6,41 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:SoundKit"
         mc:Ignorable="d"
-           Title="SoundKit"  Height="260" Width="600">
+           Title="SoundKit"  Height="1050" Width="550"
+           ResizeMode="NoResize" 
+           >
+    <Grid  HorizontalAlignment="Center" VerticalAlignment="Top">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="120"/>
+            <RowDefinition  />
+        </Grid.RowDefinitions>
+        
+        <StackPanel Grid.Row="0" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5" Height="110">
+            <TextBlock Height="20" Width="480" FontWeight="Bold">Open Fixture Window</TextBlock>
 
-    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" >
-        <!--<StackPanel   Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Top"   Width="400" >
-            <Button  Click="LoadPythonCorePathButton_Click" Width="100" Height="30" FontSize="15" FontWeight="Bold" Margin="0,0,10,0" Background="White" BorderThickness="0">
-                <StackPanel Orientation="Horizontal"  HorizontalAlignment="Left">
-                    <fa:IconBlock Icon="FileImport" Foreground="#0087d2"  HorizontalAlignment="Left"/>
-                    <Label Margin="5,0,0,0" Content="Load Core" FontSize="12" FontStretch="UltraExpanded" FontWeight="Bold" Foreground="Black"  HorizontalAlignment="Left"/>
-                </StackPanel>
-            </Button>
-            <TextBlock Name="LoadPythonCorePath" FontSize="12"  Margin="0,0,10,0"  VerticalAlignment="Center" FontStyle="Italic"> C:\model</TextBlock>
-        </StackPanel>-->
+            <StackPanel HorizontalAlignment="Left" VerticalAlignment="Top"   Orientation="Horizontal" >
+                <Button  x:Name="OpenFixture1" Click="OpenFixture1Btn_Click" Width="80" Height="30" FontSize="15" FontWeight="Bold" >Fixture 1</Button>
+                <ComboBox x:Name="MicrophoneComboBox1" Height="30" DisplayMemberPath="ProductName" Width="400" FontSize="15" />
+            </StackPanel>
 
-        <StackPanel HorizontalAlignment="Left" VerticalAlignment="Top" Margin="5"  Orientation="Horizontal" >
-            <Button  x:Name="OpenFixture1" Click="OpenFixture1Btn_Click" Width="100" Height="40" FontSize="20" FontWeight="Bold" >Fixture 1</Button>
-            <ComboBox x:Name="MicrophoneComboBox1" Height="40" DisplayMemberPath="ProductName" Width="400" FontSize="20"/>
+            <StackPanel HorizontalAlignment="Left" VerticalAlignment="Top"   Orientation="Horizontal" >
+                <Button  x:Name="OpenFixture2" Click="OpenFixture2Btn_Click" Width="80" Height="30" FontSize="15" FontWeight="Bold" >Fixture 2</Button>
+                <ComboBox x:Name="MicrophoneComboBox2" Height="30" DisplayMemberPath="ProductName" Width="400" FontSize="15" />
+            </StackPanel>
+
+            <StackPanel HorizontalAlignment="Left" VerticalAlignment="Top"  Orientation="Horizontal" >
+                <Button  x:Name="OpenFixture3" Click="OpenFixture3Btn_Click" Width="80" Height="30" FontSize="15" FontWeight="Bold" >Fixture 3</Button>
+                <ComboBox x:Name="MicrophoneComboBox3" Height="30" DisplayMemberPath="ProductName" Width="400" FontSize="15" />
+            </StackPanel>
+        </StackPanel>
+        <StackPanel Grid.Row="1" Margin="5"  Orientation="Vertical"  HorizontalAlignment="Center" VerticalAlignment="Center" Height="820" >
+            <TextBlock Height="20" Width="480" FontWeight="Bold">Logging</TextBlock>
+            <TextBox Name="MyTextBox" VerticalScrollBarVisibility="Auto" Height="800"  Width="480" Background="Black" Foreground="LightGreen"
+                    HorizontalScrollBarVisibility="Auto" IsReadOnly="True" 
+                    TextWrapping="Wrap" />
+
         </StackPanel>
 
-        <StackPanel HorizontalAlignment="Left" VerticalAlignment="Top" Margin="5"  Orientation="Horizontal" >
-            <Button  x:Name="OpenFixture2" Click="OpenFixture2Btn_Click" Width="100" Height="40" FontSize="20" FontWeight="Bold" >Fixture 2</Button>
-            <ComboBox x:Name="MicrophoneComboBox2" Height="40" DisplayMemberPath="ProductName" Width="400" FontSize="20"/>
-        </StackPanel>
-
-        <StackPanel HorizontalAlignment="Left" VerticalAlignment="Top" Margin="5"  Orientation="Horizontal" >
-            <Button  x:Name="OpenFixture3" Click="OpenFixture3Btn_Click" Width="100" Height="40" FontSize="20" FontWeight="Bold" >Fixture 3</Button>
-            <ComboBox x:Name="MicrophoneComboBox3" Height="40" DisplayMemberPath="ProductName" Width="400" FontSize="20"/>
-        </StackPanel>
-
-
-    </StackPanel>
-
+    </Grid>
 
 </Window>

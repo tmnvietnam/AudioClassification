@@ -118,6 +118,17 @@ namespace SoundKit
             }
         }
 
+        public void ConsoleWriteLine(string content)
+        {
+            // Get the current datetime
+            DateTime currentTime = DateTime.Now;
+
+            // Format the datetime for the log
+            string formattedTime = currentTime.ToString("yyyy-MM-dd HH:mm:ss");
+
+            Console.WriteLine($"[{formattedTime}] {Title}: {content}");
+        }
+
         private void ScannerSerialReceiverHandler(object sender, EventArgs e)
         {
 
@@ -189,7 +200,7 @@ namespace SoundKit
 
                             }
                             {
-                                Console.Write("SYS INPUT:");
+                                ConsoleWriteLine("SYS INPUT:");
                                 foreach (var item in frame)
                                 {
                                     Console.Write(item.ToString("X2") + " ");
@@ -238,6 +249,7 @@ namespace SoundKit
 
             SerialConnections.Add(Scanner);
             SerialConnections.Add(SystemIO);
+
         }
 
         void InitPython()
@@ -250,7 +262,7 @@ namespace SoundKit
             }
         }
 
-        public FixtureWindow(string titleWindow, int idMicrophone)
+        public FixtureWindow(string titleWindow, int idMicrophone, int idWindow)
         {
             InitializeComponent();
             this.Title = titleWindow;
@@ -266,7 +278,11 @@ namespace SoundKit
 
             InitCheckCommunication();
 
-            InitPython();    
+            InitPython();
+
+            // Set fixed position
+            this.Top = 0; // Y-coordinate
+            this.Left = 640* idWindow; // X-coordinate
         }
 
 
@@ -303,7 +319,7 @@ namespace SoundKit
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"An error occurred: {ex.Message}");
+                ConsoleWriteLine($"An error occurred: {ex.Message}");
                 return 0;
             }
         }
@@ -316,16 +332,16 @@ namespace SoundKit
                 try
                 {
                     Directory.CreateDirectory(folderPath);
-                    Console.WriteLine($"Created directory: {folderPath}");
+                    ConsoleWriteLine($"Created directory: {folderPath}");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Error creating directory {folderPath}: {ex.Message}");
+                    ConsoleWriteLine($"Error creating directory {folderPath}: {ex.Message}");
                 }
             }
             else
             {
-                Console.WriteLine($"Directory already exists: {folderPath}");
+                ConsoleWriteLine($"Directory already exists: {folderPath}");
             }
         }
 
@@ -361,7 +377,7 @@ namespace SoundKit
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.ToString());
+                ConsoleWriteLine(ex.ToString());
             }
 
         }
@@ -370,7 +386,6 @@ namespace SoundKit
         private void EnableTraining_Checked(object sender, RoutedEventArgs e)
         {
             EnableTraining = true;
-            //Duration = 100;
             SaveBtn.IsEnabled = true;
 
         }
@@ -378,7 +393,6 @@ namespace SoundKit
         private void UnableTraining_Checked(object sender, RoutedEventArgs e)
         {
             EnableTraining = false;
-            //Duration = 24 * 3600 * 7;
             SaveBtn.IsEnabled = false; ;
 
         }
@@ -763,18 +777,18 @@ namespace SoundKit
             }
             catch (IOException ex)
             {
-                Console.WriteLine($"I/O error: {ex.Message}");
+                ConsoleWriteLine($"I/O error: {ex.Message}");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Unexpected error: {ex.Message}");
+                ConsoleWriteLine($"Unexpected error: {ex.Message}");
             }
 
             return resultPart;
         }
 
         // Method to save the audio buffer as a .wav file
-        public static void SaveToWav(string filePath, List<short> audioData)
+        public void SaveToWav(string filePath, List<short> audioData)
         {
             // Convert the List<float> to a byte array
             byte[] byteArray = FloatListToByteArray(audioData);
@@ -785,7 +799,7 @@ namespace SoundKit
                 writer.Write(byteArray, 0, byteArray.Length);
             }
 
-            Console.WriteLine($"Audio saved to {filePath}");
+            //ConsoleWriteLine($"Audio saved to {filePath}");
         }
 
         // Helper method to convert a List<float> to a byte array
@@ -834,8 +848,8 @@ namespace SoundKit
                                 List<float> floatList = new List<float>(); // List to store floats
                                 foreach (var sample in currentWindow)
                                 {
-                                    short pcmValue = (short)(sample * short.MaxValue); // Normalize and convert to 16-bit PCM
-                                    float normalizedValue = pcmValue / (float)short.MaxValue; // Normalize to range [-1.0, 1.0]
+                                    // Convert back to normalized float value
+                                    float normalizedValue = sample / (float)(short.MaxValue); // Use consistent scaling factor
                                     floatList.Add(normalizedValue); // Add normalized float value to the list
                                 }
 
@@ -956,7 +970,7 @@ namespace SoundKit
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error in OnDataAvailable: {ex.Message}");
+                ConsoleWriteLine($"Error in OnDataAvailable: {ex.Message}");
             }
         }
 
@@ -972,9 +986,12 @@ namespace SoundKit
                 waveIn.DataAvailable += OnDataAvailable;
 
 
-
                 waveIn.StartRecording();
-                Debug.WriteLine("Recording started...");
+
+                Dispatcher.Invoke(() =>
+                {
+                    ConsoleWriteLine("Recording started...");
+                });
 
                 DateTime startTime = DateTime.Now;
                 while (!stopFlag && (DateTime.Now - startTime).TotalMilliseconds < Duration * 1000)
@@ -988,7 +1005,10 @@ namespace SoundKit
 
                 waveIn.StopRecording();
                 stopFlag = true;
-                Debug.WriteLine("Recording stopped.");
+                Dispatcher.Invoke(() =>
+                {
+                    ConsoleWriteLine("Recording stopped.");
+                });
             }
         }
 
@@ -1023,7 +1043,15 @@ namespace SoundKit
                 // Get the selected file path
                 string filePath = openFileDialog.FileName;
 
-                LoadModelFilePath.Text = filePath;
+                // Get the current user's home directory
+                string userHomePath = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+
+                // Remove the user's home directory from the file path
+                string relativePath = filePath.StartsWith(userHomePath, StringComparison.OrdinalIgnoreCase)
+                    ? "~\\" + filePath.Substring(userHomePath.Length).TrimStart('\\')
+                    : filePath;
+
+                LoadModelFilePath.Text = relativePath;
 
                 modelFilePath = filePath;
 
@@ -1056,7 +1084,7 @@ namespace SoundKit
             }
             catch (Exception exception)
             {
-                Console.WriteLine(exception.Message);
+                ConsoleWriteLine(exception.Message);
             }
         }
 
@@ -1080,7 +1108,7 @@ namespace SoundKit
             }
             catch (Exception exception)
             {
-                Console.WriteLine(exception.Message);
+                ConsoleWriteLine(exception.Message);
             }
         }
 
@@ -1100,29 +1128,38 @@ namespace SoundKit
                 {
                     string selectedPath = folderDialog.SelectedPath;
 
-                    DatasetPath.Text = selectedPath;
-                    datasetDir = DatasetPath.Text;
 
-                    ngFolderPath = Path.Combine(datasetDir, "NG");
-                    okFolderPath = Path.Combine(datasetDir, "OK");
+                    // Get the current user's home directory
+                    string userHomePath = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
 
-                    EnsureDirectoryExists(ngFolderPath);
-                    EnsureDirectoryExists(okFolderPath);
+                    // Remove the user's home directory from the file path
+                    string relativePath = selectedPath.StartsWith(userHomePath, StringComparison.OrdinalIgnoreCase)
+                        ? "~\\" +selectedPath.Substring(userHomePath.Length).TrimStart('\\')
+                        : selectedPath;
+
+                    DatasetPath.Text = relativePath;
+                    datasetDir = selectedPath;
 
 
+                     
+                    if(TrainingWindow!=null)
+                    {
+                        TrainingWindow.DatasetDir = datasetDir;
+                        TrainingWindow.RefreshUIDataset();
+                    }
                 }
             }
         }
 
         private void OpenTrainingWindow_Click(object sender, RoutedEventArgs e)
         {
-            TrainingWindow = new(idMicrophone, datasetDir);
+            TrainingWindow = new(Title, idMicrophone, datasetDir);
             TrainingWindow.Show();
         }
 
         private void OpenRealtimeWindow_Click(object sender, RoutedEventArgs e)
         {
-            RealtimeWindow = new(idMicrophone);
+            RealtimeWindow = new(Title, idMicrophone);
             RealtimeWindow.Show();
         }
     }
