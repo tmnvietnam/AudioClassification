@@ -56,7 +56,7 @@
 
             <StackPanel Orientation="Horizontal" Grid.Row="3"  HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,5,0,5">
                 <CheckBox Checked="EnableTraining_Checked"  Unchecked="UnableTraining_Checked" FontSize="12" Width="100"   HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Margin="0,0,10,0">Enable Training</CheckBox>
-                <Button  x:Name="SaveBtn" Click="SaveToDataset_Click" Width="110" Height="25" FontSize="12" FontWeight="Bold"    IsEnabled="False" >Save To Dataset</Button>
+                <Button x:Name="AddBtn"  Click="AddToDataset_Click"  Width="210"    Height="25"   FontSize="12" FontWeight="Bold"  IsEnabled="False">Add Selected Waveform to Dataset</Button>
             </StackPanel>
 
             <StackPanel Grid.Row="4"  HorizontalAlignment="Center" VerticalAlignment="Center" Orientation="Horizontal"  >

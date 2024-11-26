@@ -39,7 +39,7 @@ namespace SoundKit
         private DispatcherTimer timer;
 
         public string ServicePath = Properties.Settings.Default.ServicePath;
-        public string TempPath = Path.Combine(Properties.Settings.Default.ServicePath, "temp");
+        public string TempPath = string.Empty;
 
         private readonly FixtureViewModel viewModel;
 
@@ -61,7 +61,7 @@ namespace SoundKit
         public Device Scanner;
         public SystemIO SystemIO;
 
-        public int Duration = 100;      // Duration in seconds, similar to config.DURATION
+        public int Duration = 1000;      // Duration in seconds, similar to config.DURATION
         static readonly int SampleRate = 22050; // Sample rate, similar to config.SAMPLE_RATE
 
         //static readonly int Duration = 24*3600*7;      // Duration in seconds, similar to config.DURATION
@@ -282,7 +282,17 @@ namespace SoundKit
 
             // Set fixed position
             this.Top = 0; // Y-coordinate
-            this.Left = 640* idWindow; // X-coordinate
+            this.Left = 640* idWindow; // X-coordinate       
+
+            TempPath = Path.Combine(ServicePath, $"temp{idWindow}");
+            if (Directory.Exists(TempPath))
+            {
+                Directory.Delete(TempPath, true);
+            }
+            Directory.CreateDirectory(TempPath);
+
+
+
         }
 
 
@@ -386,14 +396,14 @@ namespace SoundKit
         private void EnableTraining_Checked(object sender, RoutedEventArgs e)
         {
             EnableTraining = true;
-            SaveBtn.IsEnabled = true;
+            AddBtn.IsEnabled = true;
 
         }
 
         private void UnableTraining_Checked(object sender, RoutedEventArgs e)
         {
             EnableTraining = false;
-            SaveBtn.IsEnabled = false; ;
+            AddBtn.IsEnabled = false; ;
 
         }
 
@@ -408,13 +418,13 @@ namespace SoundKit
         {
             _buttonClickedTaskCompletionSource?.SetResult("StopBtn");
             //StopBtn.IsEnabled = false;
-            //SaveBtn.IsEnabled = false;
+            //AddBtn.IsEnabled = false;
         }
 
-        private void SaveToDataset_Click(object sender, RoutedEventArgs e)
+        private void AddToDataset_Click(object sender, RoutedEventArgs e)
         {
-            //_buttonClickedTaskCompletionSource?.SetResult("SaveBtn");
-            //SaveBtn.IsEnabled = false;
+            //_buttonClickedTaskCompletionSource?.SetResult("AddBtn");
+            //AddBtn.IsEnabled = false;
             //StopBtn.IsEnabled = false;
             //ContinueBtn.IsEnabled = true;
             if (audioForTrain.Count > 0)
@@ -452,7 +462,7 @@ namespace SoundKit
             _buttonClickedTaskCompletionSource = new TaskCompletionSource<string>();
 
             //StopBtn.IsEnabled = true;
-            //SaveBtn.IsEnabled = true;
+            //AddBtn.IsEnabled = true;
             //ContinueBtn.IsEnabled = true;
 
             // Return a task that completes when either button is clicked
@@ -786,36 +796,28 @@ namespace SoundKit
 
             return resultPart;
         }
-
-        // Method to save the audio buffer as a .wav file
         public void SaveToWav(string filePath, List<short> audioData)
         {
-            // Convert the List<float> to a byte array
-            byte[] byteArray = FloatListToByteArray(audioData);
-
-            // Create a WaveFileWriter to save the audio data as a .wav file
-            using (var writer = new WaveFileWriter(filePath, new WaveFormat(SampleRate, 16, 1)))  // 16-bit PCM, mono
+            try
             {
-                writer.Write(byteArray, 0, byteArray.Length);
+                var waveFormat = new WaveFormat(SampleRate, 16, 1);
+                using (var writer = new WaveFileWriter(filePath, waveFormat))
+                {
+                    // Convert List<short> to byte array
+                    var byteArray = new byte[audioData.Count * sizeof(short)];
+                    Buffer.BlockCopy(audioData.ToArray(), 0, byteArray, 0, byteArray.Length);
+
+                    // Write the byte array to the file
+                    writer.Write(byteArray, 0, byteArray.Length);
+                }
             }
-
-            //ConsoleWriteLine($"Audio saved to {filePath}");
-        }
-
-        // Helper method to convert a List<float> to a byte array
-        private static byte[] FloatListToByteArray(List<short> audioData)
-        {
-            // Convert each float value to a byte (16-bit PCM)
-            List<byte> byteList = new List<byte>();
-            foreach (var sample in audioData)
+            catch
             {
-                short pcmValue = (short)(sample * short.MaxValue); // Normalize and convert to 16-bit PCM
-                byte[] bytes = BitConverter.GetBytes(pcmValue);
-                byteList.AddRange(bytes);
+                Console.WriteLine("Failed to save as WAV file.");
             }
-            return byteList.ToArray();
+            
         }
-
+     
         private void SlidingWindowDetection()
         {
             int index_window = 0;
@@ -829,7 +831,6 @@ namespace SoundKit
                         if (audioQueue.Count > 0)
                         {
                             Debug.WriteLine("Dequeued the next chunk of samples");
-
                             // Dequeue the next chunk of samples (short[] from the queue)
                             short[] newSamples = audioQueue.Dequeue();
 
@@ -842,8 +843,11 @@ namespace SoundKit
                                 // Extract the current window
                                 List<short> currentWindow = buffer.GetRange(0, WindowSize);
 
-                                string fileName = Path.Combine(TempPath, $@"{index_window}.wav");
-                                SaveToWav(fileName, currentWindow);
+                                if (EnableTraining)
+                                {
+                                    string fileName = Path.Combine(TempPath, $@"{index_window}.wav");
+                                    SaveToWav(fileName, currentWindow);
+                                }
 
                                 List<float> floatList = new List<float>(); // List to store floats
                                 foreach (var sample in currentWindow)
@@ -854,7 +858,6 @@ namespace SoundKit
                                 }
 
                                 dynamic segment = np.array(floatList);
-
                                 dynamic resultPredict = aiCore.predict(segment, model);
 
                                 if ((String)resultPredict == "OK")
@@ -879,52 +882,10 @@ namespace SoundKit
 
                                     resultCheck = false;
                                 }
-
-                                #region
-                                ////////////////////////////////////////////////
-                                //Dispatcher.Invoke(() =>
-                                //{
-                                //    AddMediaPlayer(currentWindow, OxyColors.Blue); // Update UI
-                                //    MediaPlayerScrollViewer.ScrollToEnd();       // Ensure visibility
-                                //});
-                                ////////////////////////////////////////////////\
-                                //if using pipe
-
-
-
-                                //string resultPredict = Predict(index_window);
-
-                                //if ((String)resultPredict == "OK")
-                                //{
-                                //    Dispatcher.Invoke(() =>
-                                //    {
-                                //        AddMediaPlayer(currentWindow, OxyColors.Green); // Update UI
-                                //        MediaPlayerScrollViewer.ScrollToEnd();       // Ensure visibility
-                                //    });
-
-                                //    resultCheck = true;
-                                //    stopFlag = true;
-                                //    break;
-
-                                //}
-                                //else
-                                //{
-                                //    Dispatcher.Invoke(() =>
-                                //    {
-                                //        AddMediaPlayer(currentWindow, OxyColors.Red); // Update UI
-                                //        MediaPlayerScrollViewer.ScrollToEnd();       // Ensure visibility
-                                //    });
-
-                                //    resultCheck = false;
-                                //}
-
-
-                                #endregion
+                             
                                 index_window++;
-
                                 // Slide the window forward by step_size
                                 buffer = buffer.GetRange(StepSize, buffer.Count - StepSize);
-
 
                             }
 
