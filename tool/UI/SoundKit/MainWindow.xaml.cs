@@ -58,7 +58,7 @@ namespace SoundKit
 
             LoadMicrophones();
 
-            this.Closed += Window_Closed;
+            this.Closed += WindowClosed;
 
             // Redirect Console output to the TextBox
             var writer = new TextBoxStreamWriter(MyTextBox);
@@ -72,7 +72,7 @@ namespace SoundKit
 
 
         }
-        private void Window_Closed(object sender, EventArgs e)
+        private void WindowClosed(object sender, EventArgs e)
         {
             PythonEngine.EndAllowThreads(0);
             PythonEngine.Shutdown();

@@ -45,10 +45,7 @@ void serialEvent()
           }
           break;
         }
-        if (index == 2 && bytesData[2] == 0x49)
-        {
-          ResponseInput();
-        }
+       
       }
     }
     while (Serial.available())

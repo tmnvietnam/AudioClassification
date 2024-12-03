@@ -29,12 +29,11 @@ def extract_peak_segment(signal, sr, duration):
     return segment
 
 # name = "NG_CON"
-for name in ['OK','NG']:
-    input_folder = f"C:/Users/ADMIN/Documents/main/working/Audio.Classification/Tool/main/data/{name}"
+for name in ['OK','NG','NG.PCB']:
+    input_folder = f"C:/Users/ADMIN/Documents/main/working/Audio.Classification/Dataset/{name}"
     output_folder = f"output/fast.fourier.transform/{name}"
 
-    os.makedirs(output_folder, exist_ok=True)
-    
+    os.makedirs(output_folder, exist_ok=True)   
 
     # Process each .wav file in the input folder
     for filename in os.listdir(input_folder):

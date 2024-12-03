@@ -391,7 +391,7 @@ def train(dataset_dir, epochs, batch_size, patience):
     early_stopping_loss = tf.keras.callbacks.EarlyStopping(
         monitor='val_loss', 
         patience=patience,
-        restore_best_weights=True)   
+        restore_best_weights=True)
 
     
     history = model.fit(X_train, y_train, 

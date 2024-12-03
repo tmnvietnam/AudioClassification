@@ -224,10 +224,7 @@ namespace SoundKit
                     ConsoleWriteLine($"Error creating directory {folderPath}: {ex.Message}");
                 }
             }
-            else
-            {
-                ConsoleWriteLine($"Directory already exists: {folderPath}");
-            }
+           
         }
 
         // Function to count files in a folder
@@ -280,6 +277,11 @@ namespace SoundKit
                     dynamic res = aiCore.train(datasetPath, epochs, batchSize, patience);
 
                     Dispatcher.Invoke(() => TrainingResult.Text = $"Accuracy: {(res[0] * 100):F2}%   Loss: {(res[1] * 100):F2}%");
+
+                    if (res[0] *100 < 90)
+                    {
+                        MessageBox.Show("Accuracy is not good");
+                    }
 
                 }
                 catch (PythonException ex)

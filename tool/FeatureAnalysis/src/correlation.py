@@ -2,12 +2,14 @@ import os
 import numpy as np
 import librosa
 from scipy.signal import correlate, hilbert, find_peaks, windows
+from sklearn.metrics.pairwise import cosine_similarity
+from scipy.spatial.distance import euclidean
 
 import matplotlib.pyplot as plt
 
 # Define the folder paths
-ng_folder = "C:/Users/ADMIN/Documents/main/working/Audio.Classification/Tool/main/data/NG"
-ok_folder = "C:/Users/ADMIN/Documents/main/working/Audio.Classification/Tool/main/data/OK"
+ng_folder = "C:/Users/ADMIN/Documents/main/working/Audio.Classification/Dataset/NG.PCB"
+ok_folder = "C:/Users/ADMIN/Documents/main/working/Audio.Classification/Dataset/OK"
 output_folder = "output/correlation"
 os.makedirs(output_folder, exist_ok=True)
 
@@ -39,6 +41,14 @@ def extract_peak_segment(signal, sr, duration):
     
     return segment 
 
+def normalize_to_probability(distribution):
+    epsilon = 1e-10  # Tránh giá trị 0
+    distribution = np.maximum(distribution, epsilon)  # Đảm bảo không có giá trị 0
+    return distribution / np.sum(distribution)
+
+def kl_divergence(p, q):
+    return np.sum(p * np.log(p / q))
+
 # Function to compute correlation between two signals
 def compute_correlation(signal1, signal2 ,sr1, sr2, duration = 0.15):
     
@@ -56,13 +66,17 @@ def compute_correlation(signal1, signal2 ,sr1, sr2, duration = 0.15):
     windowed_segment2= segment2 * gaussian_window2
     fft_magnitude2 = np.abs(np.fft.fft(windowed_segment2, n=sr2)[:sr2 // 2])
 
-    correlation = correlate(fft_magnitude1, fft_magnitude2, mode='full')
+    # correlation = correlate(fft_magnitude1, fft_magnitude2, mode='full')
+    correlation = np.corrcoef(fft_magnitude1, fft_magnitude2)[0, 1]
+    # correlation = cosine_similarity([fft_magnitude1], [fft_magnitude2])[0, 0]
+    distance = euclidean(fft_magnitude1, fft_magnitude2)
+
+    print(distance)
     # Return the maximum correlation value
-    return np.max(correlation)
+    return np.max(distance)
 
 for i, file1 in enumerate(files1):
-    signal1, sr1 = librosa.load(file1, sr=None)
-    
+    signal1, sr1 = librosa.load(file1, sr=None)    
     for j, file2 in enumerate(files2):
         signal2, sr2 = librosa.load(file2, sr=None)
         
@@ -70,10 +84,11 @@ for i, file1 in enumerate(files1):
         correlation_matrix[i, j] = compute_correlation(signal1, signal2 ,sr1, sr2)
 # Normalize correlation values to get percentage
 max_corr_value = np.abs(correlation_matrix).max()  # Find absolute max across the matrix
-correlation_percentage_matrix = (correlation_matrix / max_corr_value) * 100
+correlation_percentage_matrix = (correlation_matrix / 620) * 100
+# correlation_percentage_matrix = (correlation_matrix / max_corr_value) * 100
 
 # Create a binary mask for the second graph
-binary_threshold = 60  # Threshold in percentage
+binary_threshold = 85  # Threshold in percentage
 binary_matrix = np.where(correlation_percentage_matrix >= binary_threshold, 1, 0)
 
 # Plot the two heatmaps

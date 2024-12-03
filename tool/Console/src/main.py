@@ -42,7 +42,7 @@ source_directory = os.path.dirname(current_file_path)
 parser = argparse.ArgumentParser(description='A script for training two models with specific arguments')
 
 # Adding arguments with short names
-parser.add_argument('-f', '--function', type=str, choices=['train', 'test'], default='train', help='Specify the function to use')
+parser.add_argument('-f', '--function', type=str, choices=['train', 'test'], default='test', help='Specify the function to use')
 parser.add_argument('-m', '--model', type=int, choices=[0, 1], default=0 , help='Specify the model to use')
 
 # Parse arguments
@@ -366,9 +366,10 @@ def sliding_window_detection(models):
                     if(model_index == 0):
                         predicted_label = predict(segment, models[0], config.LABELS[0])
                         if predicted_label.startswith('OK'):
+                            print(colored(f'OK: {num_amplitude_peaks} : {max_amplitude:.4f}', 'green'))
                             # timestamp = datetime.now().strftime('%d%m%y_%H%M%S_%f')[:-3]
                             # sf.write(os.path.join(source_directory, f'../unexpected/OK_{timestamp}.wav'),current_window,config.SAMPLE_RATE)
-                            print(colored(f'OK: {num_amplitude_peaks} : {max_amplitude:.4f}', 'green'))
+                            # exit()                            
                         if predicted_label.startswith('NG'):
                             # timestamp = datetime.now().strftime('%d%m%y_%H%M%S_%f')[:-3]
                             # sf.write(os.path.join(source_directory, f'../unexpected/NG_{timestamp}.wav'),current_window,config.SAMPLE_RATE)
@@ -457,6 +458,19 @@ def main_train(model_index):
     test_loss, test_acc = model.evaluate(X_val, y_val, verbose=2)
     print(f'Test accuracy: {test_acc}')
     
+    
+    # Specify the current file name and the new name
+    current_file = model_file_path
+    new_file = model_file_path.replace("model_0","model_0_bk")
+    try:
+        os.rename(current_file, new_file)
+        print(f"File renamed from {current_file} to {new_file}")
+    except FileNotFoundError:
+        print(f"The file {current_file} does not exist.")
+    except PermissionError:
+        print("You don't have permission to rename this file.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
     # Save the model
     model.save(model_file_path)
     

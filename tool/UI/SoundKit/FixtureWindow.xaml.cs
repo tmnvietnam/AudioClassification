@@ -27,6 +27,8 @@ using System.Collections.Concurrent;
 using System.Drawing;
 using Microsoft.Win32;
 using OpenFileDialog = System.Windows.Forms.OpenFileDialog;
+using Color = System.Windows.Media.Color;
+using ColorConverter = System.Windows.Media.ColorConverter;
 
 
 namespace SoundKit
@@ -48,6 +50,8 @@ namespace SoundKit
         private string okFolderPath = string.Empty;
         private string modelFilePath = string.Empty;
 
+        public int NumberConnector = 2;
+
 
         private int metatTimePass = 0;
         private int metatTimeTotal = 0;
@@ -64,13 +68,11 @@ namespace SoundKit
         public int Duration = 1000;      // Duration in seconds, similar to config.DURATION
         static readonly int SampleRate = 22050; // Sample rate, similar to config.SAMPLE_RATE
 
-        //static readonly int Duration = 24*3600*7;      // Duration in seconds, similar to config.DURATION
         static readonly int WindowSize = SampleRate;
         static readonly int StepSize = SampleRate / 10;
 
 
         private int idMicrophone = 0;
-
         private bool resultCheck;
 
         private dynamic model;
@@ -103,6 +105,35 @@ namespace SoundKit
             }
         }
 
+
+        private bool _CylinderFullDown = false;
+
+        public bool CylinderCome
+        {
+            get { return _CylinderFullDown; }
+            set
+            {
+                if (_CylinderFullDown != value)
+                {
+                    _CylinderFullDown = value;
+                }
+            }
+        }
+
+        private bool _BarcodeUse = false;
+
+        public bool BarcodeUse
+        {
+            get { return _BarcodeUse; }
+            set
+            {
+                if (_BarcodeUse != value)
+                {
+                    _BarcodeUse = value;
+                }
+            }
+        }
+
         private bool _BarcodeReady = false;
 
         public bool BarcodeReady
@@ -114,9 +145,8 @@ namespace SoundKit
                 {
                     _BarcodeReady = value;
                 }
-
             }
-        }
+        } 
 
         public void ConsoleWriteLine(string content)
         {
@@ -135,21 +165,16 @@ namespace SoundKit
             string code = "";
 
             code = Scanner.ReadLine();
-            Trace.WriteLine($"code:{code}");
+            Debug.WriteLine($"code:{code}");
             Scanner.SerialPort.DiscardInBuffer();
 
             if (code.Length > 5)
             {
-                BarcodeReady = true;
-
-                SystemIO.Lock = true;
-                SystemIO.SendControl();
+                BarcodeReady = true;               
             }
             else
             {
-                BarcodeReady = false;
-                SystemIO.Lock = false;
-                SystemIO.SendControl();
+                BarcodeReady = false;             
             }
             Task.Delay(800);
         }
@@ -193,21 +218,15 @@ namespace SoundKit
                             }
                             try
                             {
-                                SystemIO.DataOuput(new byte[] { frame[4], frame[5], frame[6], frame[7] });
+                                SystemIO.DataReceived(new byte[] { frame[4], frame[5], frame[6], frame[7] });
                             }
                             catch (Exception ex)
                             {
 
                             }
-                            {
-                                ConsoleWriteLine("SYS INPUT:");
-                                foreach (var item in frame)
-                                {
-                                    Console.Write(item.ToString("X2") + " ");
-                                }
-                                Console.WriteLine(" ");
-                                return;
-                            }
+                          
+                            return;
+                           
                         }
                     }
                 }
@@ -218,7 +237,10 @@ namespace SoundKit
         {
             Dispatcher.Invoke(() =>
             {
-                //ReadyTest = true;
+
+                CylinderCome = true;
+
+
             });
         }
         private void LoadComPorts()
@@ -235,8 +257,8 @@ namespace SoundKit
                 comPortComboBox2.SelectedItem = ports[0];  // Set the default to the first COM port           
             }
 
-            Scanner = new Device(connectionStatusDevice1, txStatusDevice1, rxStatusDevice1);
-            SystemIO = new SystemIO(connectionStatusDevice2, txStatusDevice2, rxStatusDevice2);
+            Scanner = new Device(Title,connectionStatusDevice1, txStatusDevice1, rxStatusDevice1);
+            SystemIO = new SystemIO(Title, connectionStatusDevice2, txStatusDevice2, rxStatusDevice2);
 
             Scanner.SerialReceiverHandler -= ScannerSerialReceiverHandler;
             SystemIO.SerialReceiverHandler -= ControllerSerialReceiverHandler;
@@ -291,8 +313,7 @@ namespace SoundKit
             }
             Directory.CreateDirectory(TempPath);
 
-
-
+            NumberConnectorText.Content = $"{NumberConnector}";
         }
 
 
@@ -423,10 +444,7 @@ namespace SoundKit
 
         private void AddToDataset_Click(object sender, RoutedEventArgs e)
         {
-            //_buttonClickedTaskCompletionSource?.SetResult("AddBtn");
-            //AddBtn.IsEnabled = false;
-            //StopBtn.IsEnabled = false;
-            //ContinueBtn.IsEnabled = true;
+           
             if (audioForTrain.Count > 0)
             {
                 audioForTrain.ForEach(audio =>
@@ -446,37 +464,10 @@ namespace SoundKit
 
                 });
 
-                //string datasetPath = datasetDir.Replace("\\", "/");
-                //await TrainAsync(datasetPath);
-                //File.Copy(Path.Combine(viewModel.BackendPath, "model.h5"), modelFilePath, overwrite: true);
-
-                //NumberNGDataSet.Text = $"NG sound: {CountFilesInFolder(ngFolderPath)} files";
-                //NumberOKDataSet.Text = $"OK sound: {CountFilesInFolder(okFolderPath)} files";
+              
 
             }
 
-        }
-
-        private Task<string> WaitForBtnClick()
-        {
-            _buttonClickedTaskCompletionSource = new TaskCompletionSource<string>();
-
-            //StopBtn.IsEnabled = true;
-            //AddBtn.IsEnabled = true;
-            //ContinueBtn.IsEnabled = true;
-
-            // Return a task that completes when either button is clicked
-            return _buttonClickedTaskCompletionSource.Task;
-        }
-
-        private Task<string> WaitForContinueBtnClick()
-        {
-            _buttonClickedTaskCompletionSource = new TaskCompletionSource<string>();
-
-            //ContinueBtn.IsEnabled = true;
-
-            // Return a task that completes when either button is clicked
-            return _buttonClickedTaskCompletionSource.Task;
         }
 
 
@@ -525,32 +516,39 @@ namespace SoundKit
 
         private async Task StartTestHandlerAsync()
         {
+         
+
             while (ReadyTest)
-            {
-                if (BarcodeReady)
-                {
+            {          
+                if (CylinderCome && (BarcodeReady || !BarcodeUse))
+                {                  
+                    CylinderCome = false;
+                    BarcodeReady = false;
+
                     await Dispatcher.InvokeAsync(async () =>
                     {
                         int timePass = 0;
-                        ResultTime.Content = $"{timePass}/3";
-
-                        ResultFinal.Background = new SolidColorBrush(Colors.WhiteSmoke);
-                        ResultFinal.Foreground = new SolidColorBrush(Colors.Black);
+                        ResultTime.Content = $"{timePass}";
+                       
+                        ResultFinal.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#23affc"));
+                        ResultFinal.Foreground = new SolidColorBrush(Colors.White);
                         ResultFinal.Content = "TESTING";
 
                         if (File.Exists(modelFilePath) && (!EnableTraining || Path.Exists(datasetDir)))
                         {
                             ResetMediaPlayer();
                             bool resultSound = false;
-                            for (int idxSound = 0; idxSound < 3; idxSound++)
+                            for (int idxSound = 0; idxSound < NumberConnector; idxSound++)
                             {
                                 try
                                 {
                                     if (await CheckAsync())
                                     {
                                         timePass++;
-                                        ResultTime.Content = $"{timePass}/3";
+                                        ResultTime.Content = $"{timePass}";
                                         resultSound = true;
+
+                                        await Task.Delay(1000);
                                         continue;
                                     }
                                     else
@@ -573,7 +571,7 @@ namespace SoundKit
                                 ResultFinal.Background = new SolidColorBrush(Colors.LawnGreen);
                                 ResultFinal.Foreground = new SolidColorBrush(Colors.White);
                                 ResultFinal.Content = "OK";
-                                metatTimePass++;
+                                metatTimePass++;                 
                             }
                             else
                             {
@@ -582,10 +580,19 @@ namespace SoundKit
                                 ResultFinal.Content = "NG";
                             }
 
-                            SystemIO.Lock = false;
+                            await Task.Delay(1000);
+                            ResultFinal.Background = new SolidColorBrush(Colors.Yellow);
+                            ResultFinal.Foreground = new SolidColorBrush(Colors.Black);
+                            ResultFinal.Content = "READY";
+
+
+                            SystemIO.ResetOUT = true ;
                             SystemIO.SendControl();
 
                             ResultSumary.Content = $"OK: {metatTimePass}     NG: {metatTimeTotal - metatTimePass}";
+
+                            SystemIO.ResetOUT = false;
+                            SystemIO.SendControl();
                         }
                         else
                         {
@@ -599,28 +606,41 @@ namespace SoundKit
                                 MessageBox.Show("Dataset folder not found.");
                             }
                         }
+                    
                     });
 
-                    BarcodeReady = false;
+                   
                 }
+
             }
         }
 
-        private async void StartTest(object sender, RoutedEventArgs e)
+        private async void StartTestBtn_Click(object sender, RoutedEventArgs e)
         {
             ReadyTest = true;
-            StartTestBtn.IsEnabled = false;
+            SystemIO.ResetOUT = false;
+            SystemIO.SendControl();
+
+            ResultFinal.Background = new SolidColorBrush(Colors.Yellow);
+            ResultFinal.Foreground = new SolidColorBrush(Colors.Black);
+            ResultFinal.Content = "READY";
             StopTestBtn.IsEnabled = true;
+            StartTestBtn.IsEnabled = false;
 
             await Task.Run(() => StartTestHandlerAsync());
-
         }
-        private async void StopTest(object sender, RoutedEventArgs e)
+
+        private async void StopTestBtn_Click(object sender, RoutedEventArgs e)
         {
             ReadyTest = false;
+            SystemIO.ResetOUT = false;
+            SystemIO.SendControl();
 
-            StartTestBtn.IsEnabled = true;
+            ResultFinal.Background = new SolidColorBrush(Colors.Black);
+            ResultFinal.Foreground = new SolidColorBrush(Colors.White);
+            ResultFinal.Content = "STOP";
             StopTestBtn.IsEnabled = false;
+            StartTestBtn.IsEnabled = true;
         }
 
         private void chkEnable_Checked_NG(object sender, RoutedEventArgs e, MediaPlayer mediaPlayer, int indexMediaPlayer)
@@ -727,75 +747,7 @@ namespace SoundKit
             FixtureViewModel.UpdatePlot(plotModel, audioData.ToArray());
         }
 
-        //static List<float> ConvertByteArrayToFloatList(List<float> byteArray)
-        //{
-        //    int byteCount = byteArray.Count / 2; // 16-bit samples, so divide by 2 (2 bytes per sample)
-        //    float[] floatArray = new float[byteCount];
-
-        //    for (int i = 0; i < byteCount; i++)
-        //    {
-        //        short sample = BitConverter.ToInt16(byteArray.ToArray(), i * 2);
-        //        // Convert the 16-bit PCM sample to a float between -1 and 1
-        //        floatArray[i] = sample / (float)short.MaxValue;
-        //    }
-
-        //    return floatArray.ToList();
-        //}       
-
-        public string Predict(int index, string modelPath = "")
-        {
-            string resultPart = string.Empty;
-            try
-            {
-                // Create a NamedPipeClientStream
-                using (var pipeClient = new NamedPipeClientStream(".", "TensorflowService", PipeDirection.InOut, PipeOptions.None))
-                {
-                    // Connect to the pipe
-                    pipeClient.Connect();
-
-                    // Write to the pipe
-                    string message = $"predict@{index}@{modelPath}";
-                    byte[] messageBytes = Encoding.UTF8.GetBytes(message);
-                    pipeClient.Write(messageBytes, 0, messageBytes.Length);
-
-                    // Read the response
-                    byte[] buffer = new byte[64 * 1024]; // 64 KB buffer
-                    int bytesRead = pipeClient.Read(buffer, 0, buffer.Length);
-                    string response = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-
-                    // Parse and format the accuracy value
-                    if (response.Contains("response:"))
-                    {
-                        try
-                        {
-                            // Extract the accuracy value from the response
-                            resultPart = response.Split(new[] { "response:" }, StringSplitOptions.None)[1].Trim();
-
-
-                        }
-                        catch (Exception ex)
-                        {
-                            // Handle exception when parsing accuracy
-                        }
-                    }
-                    else
-                    {
-                        // Handle case where no accuracy data is received                      
-                    }
-
-                }
-            }
-            catch (IOException ex)
-            {
-                ConsoleWriteLine($"I/O error: {ex.Message}");
-            }
-            catch (Exception ex)
-            {
-                ConsoleWriteLine($"Unexpected error: {ex.Message}");
-            }
-
-            return resultPart;
-        }
+      
         public void SaveToWav(string filePath, List<short> audioData)
         {
             try
@@ -813,13 +765,15 @@ namespace SoundKit
             }
             catch
             {
-                Console.WriteLine("Failed to save as WAV file.");
+                ConsoleWriteLine("Failed to save as WAV file.");
             }
             
         }
      
         private void SlidingWindowDetection()
         {
+            audioQueue.Clear();
+
             int index_window = 0;
             List<short> buffer = new List<short>();  // Buffer to hold incoming samples
             using (Py.GIL()) // Acquire the Global Interpreter Lock
@@ -1034,7 +988,7 @@ namespace SoundKit
                 Scanner.SerialPort.NewLine = "\r";
 
                 Scanner.CheckCommunication("COM20");
-                SystemIO.CheckCommunication("COM23");
+                SystemIO.CheckCommunication("COM13");
 
                 Scanner.SerialReceiverHandler -= ScannerSerialReceiverHandler;
                 SystemIO.SerialReceiverHandler -= ControllerSerialReceiverHandler;
@@ -1076,7 +1030,7 @@ namespace SoundKit
         private void ScanCode(object sender, RoutedEventArgs e)
         {
             BarcodeReady = true;
-
+           
         }
 
         private void OpenDatasetButton_Click(object sender, RoutedEventArgs e)
@@ -1122,6 +1076,18 @@ namespace SoundKit
         {
             RealtimeWindow = new(Title, idMicrophone);
             RealtimeWindow.Show();
+        }
+
+        private void EnableScanner_Checked(object sender, RoutedEventArgs e)
+        {
+            BarcodeUse = true;
+            ScanCodeBtn.IsEnabled = true;
+        }
+
+        private void UnableScanner_Checked(object sender, RoutedEventArgs e)
+        {
+            BarcodeUse = false;
+            ScanCodeBtn.IsEnabled = false;
         }
     }
 }

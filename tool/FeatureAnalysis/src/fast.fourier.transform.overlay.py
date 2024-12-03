@@ -30,7 +30,7 @@ def extract_peak_segment(signal, sr, duration):
 
 # name = "NG_CON"
 for name in ['OK','NG', 'NG.PCB']:
-    input_folder = f"C:/Users/ADMIN/Documents/main/working/Audio.Classification/Tool/main/data/{name}"
+    input_folder = f"C:/Users/ADMIN/Documents/main/working/Audio.Classification/Dataset/{name}"
     output_folder = f"output/fast.fourier.transform.overlay"
 
     os.makedirs(output_folder, exist_ok=True)

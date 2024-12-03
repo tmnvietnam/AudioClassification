@@ -10,6 +10,7 @@ namespace SoundKit.Serial
 {
     public class Device
     {
+
         public enum CheckSumType
         {
             XOR,
@@ -27,6 +28,8 @@ namespace SoundKit.Serial
         public static byte Suffix = 0x56;
 
         public SerialPort SerialPort;
+
+        public string Title;
 
         public CancellationTokenSource _shutDown = new CancellationTokenSource();
         public event EventHandler SerialReceiverHandler;
@@ -49,8 +52,10 @@ namespace SoundKit.Serial
 
         public List<int> Buffer = new List<int>();
 
-        public Device(Rectangle connectionStatusDevice, Rectangle txStatusDevice, Rectangle rxStatusDevice)
+        public Device(string title, Rectangle connectionStatusDevice, Rectangle txStatusDevice, Rectangle rxStatusDevice)
         {
+            Title = title;
+
             SerialPort = new SerialPort()
             {
                 BaudRate = 9600,
@@ -141,7 +146,19 @@ namespace SoundKit.Serial
             return 0x00;
         }
 
-        public static byte[] CreateFrame(byte[] datas, bool IsNoSize = false)
+        public void ConsoleWriteLine(string content)
+        {
+            // Get the current datetime
+            DateTime currentTime = DateTime.Now;
+
+            // Format the datetime for the log
+            string formattedTime = currentTime.ToString("yyyy-MM-dd HH:mm:ss");
+
+            Console.WriteLine($"[{formattedTime}] {Title}: {content}");
+        }
+
+
+        public byte[] CreateFrame(byte[] datas, bool IsNoSize = false)
         {
 
             if (datas == null) return null;
@@ -164,13 +181,18 @@ namespace SoundKit.Serial
             dataToSend.Add(checksum);
             dataToSend.Add(Suffix);
 
+            ConsoleWriteLine("");
             foreach (var item in dataToSend)
             {
                 Console.Write(item.ToString("X2") + " ");
             }
-            Console.WriteLine(" ");
+            Console.WriteLine("");
+
             return dataToSend.ToArray();
         }
+
+  
+
         public void SendBytes(byte[] buf)
         {
             try
@@ -184,8 +206,6 @@ namespace SoundKit.Serial
                 SerialPort.DiscardInBuffer();
 
                 SerialPort.Write(buf, 0, buf.Length);
-
-
 
             }
             catch (Exception)
